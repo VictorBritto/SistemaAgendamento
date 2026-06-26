@@ -36,29 +36,17 @@
             </div>
             <div style="grid-column: 1 / -1;">
               <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-                <label for="recursoSelecionado" style="margin-bottom: 0;">Recurso Específico</label>
-                <button 
-                  type="button" 
-                  v-if="form.categoria === 'informatica' || form.categoria === 'salas'" 
-                  @click="modoCadastroRecurso = !modoCadastroRecurso" 
-                  class="btn-cadastrar-recurso"
-                  :class="{ 'cancel': modoCadastroRecurso }"
-                >
-                  <svg v-if="!modoCadastroRecurso" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-                  <svg v-else width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-                  {{ modoCadastroRecurso ? 'Cancelar Cadastro' : 'Cadastrar Novo' }}
-                </button>
-              </div>
-
-              <div v-if="modoCadastroRecurso" style="margin-bottom: 8px;">
+                <label style="margin-bottom: 0;">Recurso Específico</label>
                 <div style="display: flex; gap: 8px;">
-                  <input type="text" id="novoRecurso" v-model="novoRecursoNome" placeholder="Digite o nome do novo recurso/sala">
-                  <button type="button" @click="salvarNovoRecurso" class="btn-submit" style="width: auto; padding: 0 16px; margin: 0; background-color: #10b981;">Salvar</button>
+                  <button v-if="form.recurso && recursosDisponiveis.includes(form.recurso)" type="button" @click="apagarRecursoExtra(form.categoria, form.recurso)" class="btn-cadastrar-recurso" style="padding: 4px 10px; font-size: 11px; color: #ef4444; border-color: #fca5a5;" title="Apagar recurso selecionado">
+                    Apagar
+                  </button>
+                  <button type="button" @click="abrirModalCadastro('recurso')" class="btn-cadastrar-recurso" style="padding: 4px 10px; font-size: 11px;">
+                    + Novo Recurso
+                  </button>
                 </div>
-                <small class="text-muted" style="display: block; margin-top: 4px;">Após salvo, este recurso ficará disponível para sempre neste campus.</small>
               </div>
-
-              <select v-else id="recursoSelecionado" v-model="form.recurso" required :disabled="!recursosDisponiveis.length">
+              <select id="recursoSelecionado" v-model="form.recurso" required :disabled="!recursosDisponiveis.length">
                 <option value="" v-if="!recursosDisponiveis.length">-- Escolha o Campus e Categoria primeiro --</option>
                 <option value="" v-else>-- Selecione o Recurso --</option>
                 <option v-for="rec in recursosDisponiveis" :key="rec" :value="rec">{{ rec }}</option>
@@ -74,6 +62,43 @@
             <h3>Cronograma</h3>
           </div>
           <div class="input-grid">
+            
+            <!-- Secao de Presets -->
+            <div style="grid-column: 1 / -1; padding-bottom: 16px; border-bottom: 1px solid var(--border-color); margin-bottom: 8px;">
+              <label>Presets de Cronograma</label>
+              
+              <div>
+                <select v-model="presetSelecionado" @change="carregarPreset">
+                  <option value="">-- Carregar um preset de horário (Opcional) --</option>
+                  <option v-for="preset in presetsDisponiveis" :key="preset.id" :value="preset.nome">{{ preset.nome.split('||')[0] }}</option>
+                </select>
+                <div style="margin-top: 6px; display: flex; justify-content: flex-end; gap: 8px;">
+                  <button v-if="presetSelecionado" type="button" @click="apagarRecursoExtra('preset_horario', presetSelecionado)" class="btn-cadastrar-recurso" style="padding: 4px 10px; font-size: 11px; color: #ef4444; border-color: #fca5a5;">
+                    Apagar Preset
+                  </button>
+                  <button type="button" @click="abrirModalCadastro('preset')" class="btn-cadastrar-recurso" style="padding: 4px 10px; font-size: 11px;">
+                    + Novo Preset
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div style="grid-column: 1 / -1; display: flex; flex-direction: column; gap: 8px; margin-bottom: 8px; background: var(--input-bg); padding: 12px; border: 1px solid var(--border-color); border-radius: 6px;">
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <label style="margin-bottom: 0; font-weight: 600; font-size: 12px; color: var(--text-color);">Semestre Letivo:</label>
+                <button v-if="isAdmin" type="button" @click="abrirModalConfig" class="btn-cadastrar-recurso" style="padding: 2px 8px; font-size: 11px; margin: 0;">
+                  ⚙️ Editar
+                </button>
+              </div>
+              <div style="display: flex; gap: 16px;">
+                <label style="display: flex; align-items: center; gap: 6px; cursor: pointer; font-weight: normal; font-size: 13px;">
+                  <input type="radio" value="1" v-model="semestreAtivo" @change="validarDatasSemestre"> 1º Semestre
+                </label>
+                <label style="display: flex; align-items: center; gap: 6px; cursor: pointer; font-weight: normal; font-size: 13px;">
+                  <input type="radio" value="2" v-model="semestreAtivo" @change="validarDatasSemestre"> 2º Semestre
+                </label>
+              </div>
+            </div>
             <div style="grid-column: 1 / -1;">
               <label for="tipoAgendamento">Modelo de Distribuição</label>
               <select id="tipoAgendamento" v-model="form.tipoAgendamento" @change="alternarTipoAgendamento">
@@ -85,16 +110,16 @@
 
             <div>
               <label for="dateInicio">Data Inicial</label>
-              <input type="date" id="dateInicio" v-model="form.dataInicio" min="2026-08-10" max="2026-12-18" @change="replicarDataPontual" required>
+              <input type="date" id="dateInicio" v-model="form.dataInicio" :min="minDate" :max="maxDate" @change="() => { replicarDataPontual(); validarInputManual() }" required>
             </div>
             <div :style="{ opacity: form.tipoAgendamento === 'pontual' || !form.tipoAgendamento ? 0.5 : 1 }">
               <label for="dateFim">Data Final</label>
-              <input type="date" id="dateFim" v-model="form.dataFim" min="2026-08-10" max="2026-12-18" :disabled="form.tipoAgendamento === 'pontual' || !form.tipoAgendamento" required>
+              <input type="date" id="dateFim" v-model="form.dataFim" :min="minDate" :max="maxDate" :disabled="form.tipoAgendamento === 'pontual' || !form.tipoAgendamento" @change="validarInputManual" required>
             </div>
 
             <div v-show="form.tipoAgendamento === 'periodo'" style="grid-column: 1 / -1;">
               <label>Dias da Semana (Recorrência)</label>
-              <div class="checkbox-group" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); gap: 12px; margin-top: 8px; background: #f8fafc; padding: 16px; border: 1px solid var(--border-color); border-radius: 6px;">
+              <div class="checkbox-group" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); gap: 12px; margin-top: 8px; background: var(--input-bg); padding: 16px; border: 1px solid var(--border-color); border-radius: 6px;">
                 <label class="checkbox-label"><input type="checkbox" value="1" v-model="form.diasSemana"> Segunda</label>
                 <label class="checkbox-label"><input type="checkbox" value="2" v-model="form.diasSemana"> Terça</label>
                 <label class="checkbox-label"><input type="checkbox" value="3" v-model="form.diasSemana"> Quarta</label>
@@ -129,11 +154,40 @@
             </div>
             <div>
               <label for="professor">Professor Responsável</label>
-              <input type="text" id="professor" v-model="form.professor" placeholder="Ex: Prof. Silva" required>
+              
+              <div>
+                <select id="professor" v-model="form.professor" @change="aoSelecionarProfessor" required>
+                  <option value="">-- Selecione o Professor --</option>
+                  <option v-for="prof in professoresDisponiveis" :key="prof.nome" :value="prof.nome">{{ prof.nome }}</option>
+                </select>
+                <div style="margin-top: 6px; display: flex; justify-content: flex-end; gap: 8px;">
+                  <button v-if="form.professor" type="button" @click="apagarRecursoExtra('professor', professoresDisponiveisObj.find(p => p.nome === form.professor)?.originalNome)" class="btn-cadastrar-recurso" style="padding: 4px 10px; font-size: 11px; color: #ef4444; border-color: #fca5a5;">
+                    Apagar Prof.
+                  </button>
+                  <button type="button" @click="abrirModalCadastro('professor')" class="btn-cadastrar-recurso" style="padding: 4px 10px; font-size: 11px;">
+                    + Cadastrar Novo
+                  </button>
+                </div>
+              </div>
             </div>
+            
             <div>
               <label for="curso">Curso Alvo</label>
-              <input type="text" id="curso" v-model="form.curso" placeholder="Ex: Eng. Computação" required>
+              
+              <div>
+                <select id="curso" v-model="form.curso" required>
+                  <option value="">-- Selecione o Curso --</option>
+                  <option v-for="cur in cursosDisponiveis" :key="cur" :value="cur">{{ cur }}</option>
+                </select>
+                <div style="margin-top: 6px; display: flex; justify-content: flex-end; gap: 8px;">
+                  <button v-if="form.curso" type="button" @click="apagarRecursoExtra('curso', form.curso)" class="btn-cadastrar-recurso" style="padding: 4px 10px; font-size: 11px; color: #ef4444; border-color: #fca5a5;">
+                    Apagar Curso
+                  </button>
+                  <button type="button" @click="abrirModalCadastro('curso')" class="btn-cadastrar-recurso" style="padding: 4px 10px; font-size: 11px;">
+                    + Cadastrar Novo
+                  </button>
+                </div>
+              </div>
             </div>
             <div style="grid-column: 1 / -1;">
               <label for="observacao">Observação Adicional (Opcional)</label>
@@ -150,8 +204,8 @@
           <h3 style="margin-bottom: 0;">Resumo da Operação</h3>
           
           <div class="alert-info" style="text-align: left; margin-top: 16px; padding: 12px; font-size: 13px;">
-            <strong style="display:block; margin-bottom: 4px; font-size: 12px; text-transform: uppercase;">Período Letivo Base</strong>
-            <span style="font-weight: 500;">10/08/2026 até 18/12/2026</span>
+            <strong style="display:block; margin-bottom: 4px; font-size: 12px; text-transform: uppercase;">Período Letivo Base ({{ semestreAtivo }}º Sem)</strong>
+            <span style="font-weight: 500;">{{ minDateBr }} até {{ maxDateBr }}</span>
           </div>
 
           <div class="summary-details">
@@ -180,18 +234,218 @@
           </div>
         </div>
       </div>
+      <!-- Modal de Cadastro -->
+      <div class="modal-overlay" v-if="modalCadastro.aberto">
+        <div class="modal-content">
+          <h3 style="margin-top: 0; margin-bottom: 24px; color: var(--primary-color);">
+            {{ 
+              modalCadastro.tipo === 'recurso' ? 'Cadastrar Novo Recurso' :
+              modalCadastro.tipo === 'preset' ? 'Cadastrar Novo Preset' :
+              modalCadastro.tipo === 'professor' ? 'Cadastrar Novo Professor' :
+              'Cadastrar Novo Curso'
+            }}
+          </h3>
+
+          <div v-if="modalCadastro.tipo === 'recurso'" style="display: flex; flex-direction: column; gap: 16px;">
+            <div class="input-group">
+              <label>Nome do Recurso</label>
+              <input type="text" v-model="novoRecursoNome" placeholder="Ex: Laboratório 01" required>
+            </div>
+            <div style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 8px;">
+              <button type="button" @click="fecharModalCadastro" class="btn-cancel" style="width: auto; margin: 0;">Cancelar</button>
+              <button type="button" @click="salvarNovoRecurso" class="btn-submit" style="width: auto; margin: 0;">Salvar</button>
+            </div>
+          </div>
+
+          <div v-if="modalCadastro.tipo === 'preset'" style="display: flex; flex-direction: column; gap: 16px;">
+            <div class="alert-info" style="font-size: 13px; text-align: left; padding: 12px; margin-bottom: 8px;">
+              Preencha os campos de <strong>data e horário</strong> no formulário principal antes de criar o preset.
+            </div>
+            <div class="input-group">
+              <label>Nome do Preset</label>
+              <input type="text" v-model="novoPresetNome" placeholder="Ex: Matutino - Seg e Qua" required>
+            </div>
+            <div style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 8px;">
+              <button type="button" @click="fecharModalCadastro" class="btn-cancel" style="width: auto; margin: 0;">Cancelar</button>
+              <button type="button" @click="salvarNovoPreset" class="btn-submit" style="width: auto; margin: 0;">Salvar Preset</button>
+            </div>
+          </div>
+
+          <div v-if="modalCadastro.tipo === 'professor'" style="display: flex; flex-direction: column; gap: 16px;">
+            <div class="input-group">
+              <label>Nome do Professor</label>
+              <input type="text" v-model="novoProfessorNome" placeholder="Ex: João da Silva" required>
+            </div>
+            <div class="input-group">
+              <label>Vincular a um Curso Padrão (Opcional)</label>
+              <select v-model="novoProfessorCurso">
+                <option value="">-- Nenhum --</option>
+                <option v-for="cur in cursosDisponiveis" :key="cur" :value="cur">{{ cur }}</option>
+              </select>
+            </div>
+            <div style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 8px;">
+              <button type="button" @click="fecharModalCadastro" class="btn-cancel" style="width: auto; margin: 0;">Cancelar</button>
+              <button type="button" @click="salvarNovoProfessor" class="btn-submit" style="width: auto; margin: 0;">Salvar Professor</button>
+            </div>
+          </div>
+
+          <div v-if="modalCadastro.tipo === 'curso'" style="display: flex; flex-direction: column; gap: 16px;">
+            <div class="input-group">
+              <label>Nome do Curso</label>
+              <input type="text" v-model="novoCursoNome" placeholder="Ex: Engenharia de Software" required>
+            </div>
+            <div style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 8px;">
+              <button type="button" @click="fecharModalCadastro" class="btn-cancel" style="width: auto; margin: 0;">Cancelar</button>
+              <button type="button" @click="salvarNovoCurso" class="btn-submit" style="width: auto; margin: 0;">Salvar</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Modal de Configuração de Semestres (Admin) -->
+      <div class="modal-overlay" v-if="modalConfigSemestre" style="z-index: 2000;">
+        <div class="modal-content" style="max-width: 500px;">
+          <h3 style="margin-top: 0; margin-bottom: 24px; color: var(--primary-color);">Editar Períodos Letivos</h3>
+          
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+            <div style="grid-column: 1 / -1; font-weight: bold; margin-bottom: -8px;">1º Semestre</div>
+            <div class="input-group">
+              <label>Data de Início</label>
+              <input type="date" v-model="formConfigSemestre.sem1Inicio" required>
+            </div>
+            <div class="input-group">
+              <label>Data de Fim</label>
+              <input type="date" v-model="formConfigSemestre.sem1Fim" required>
+            </div>
+
+            <div style="grid-column: 1 / -1; font-weight: bold; margin-bottom: -8px; margin-top: 8px;">2º Semestre</div>
+            <div class="input-group">
+              <label>Data de Início</label>
+              <input type="date" v-model="formConfigSemestre.sem2Inicio" required>
+            </div>
+            <div class="input-group">
+              <label>Data de Fim</label>
+              <input type="date" v-model="formConfigSemestre.sem2Fim" required>
+            </div>
+          </div>
+
+          <div style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 24px;">
+            <button type="button" @click="modalConfigSemestre = false" class="btn-cancel" style="width: auto; margin: 0;">Cancelar</button>
+            <button type="button" @click="salvarConfigSemestre" class="btn-submit" style="width: auto; margin: 0;">Salvar Datas</button>
+          </div>
+        </div>
+      </div>
     </form>
   </div>
 </template>
 
 <script setup>
-import { reactive, ref, onMounted } from 'vue'
+import { reactive, ref, computed, onMounted } from 'vue'
+import Swal from 'sweetalert2'
 import { useReservas } from '../composables/useReservas'
+import { useAuth } from '../composables/useAuth'
 
-const { reservas, carregarReservas, adicionarReservas, recursosExtras, carregarRecursosExtras, adicionarRecursoExtra } = useReservas()
+const { isAdmin } = useAuth()
+const { reservas, carregarReservas, adicionarReservas, recursosExtras, carregarRecursosExtras, adicionarRecursoExtra, deletarRecursoExtra, atualizarRecursoExtra } = useReservas()
+
+const mesAtual = new Date().getMonth()
+const semestreAtivo = ref(mesAtual > 5 ? '2' : '1')
+
+const configuracaoSemestreId = ref('')
+const configsSemestre = reactive({
+  sem1Inicio: '2026-02-23',
+  sem1Fim: '2026-06-26',
+  sem2Inicio: '2026-08-10',
+  sem2Fim: '2026-12-18'
+})
+
+const minDate = computed(() => semestreAtivo.value === '1' ? configsSemestre.sem1Inicio : configsSemestre.sem2Inicio)
+const maxDate = computed(() => semestreAtivo.value === '1' ? configsSemestre.sem1Fim : configsSemestre.sem2Fim)
+
+const minDateBr = computed(() => minDate.value.split('-').reverse().join('/'))
+const maxDateBr = computed(() => maxDate.value.split('-').reverse().join('/'))
+
+const validarDatasSemestre = () => {
+  if (form.dataInicio) {
+    if (form.dataInicio < minDate.value || form.dataInicio > maxDate.value) {
+      Swal.fire('Aviso', `Você mudou para o ${semestreAtivo.value}º Semestre, mas a data inicial estava no outro semestre. A data foi redefinida.`, 'info')
+      form.dataInicio = ''
+    }
+  }
+  if (form.dataFim) {
+    if (form.dataFim < minDate.value || form.dataFim > maxDate.value) {
+      form.dataFim = ''
+    }
+  }
+}
+
+const validarInputManual = () => {
+  if (form.dataInicio && (form.dataInicio < minDate.value || form.dataInicio > maxDate.value)) {
+    Swal.fire('Atenção', `A data inicial não pertence ao ${semestreAtivo.value}º Semestre. Limites: ${minDateBr.value} a ${maxDateBr.value}.`, 'warning')
+    form.dataInicio = ''
+  }
+  if (form.dataFim && (form.dataFim < minDate.value || form.dataFim > maxDate.value)) {
+    Swal.fire('Atenção', `A data final não pertence ao ${semestreAtivo.value}º Semestre. Limites: ${minDateBr.value} a ${maxDateBr.value}.`, 'warning')
+    form.dataFim = ''
+  }
+}
+
+const modalConfigSemestre = ref(false)
+const formConfigSemestre = reactive({ sem1Inicio: '', sem1Fim: '', sem2Inicio: '', sem2Fim: '' })
+
+const abrirModalConfig = () => {
+  formConfigSemestre.sem1Inicio = configsSemestre.sem1Inicio
+  formConfigSemestre.sem1Fim = configsSemestre.sem1Fim
+  formConfigSemestre.sem2Inicio = configsSemestre.sem2Inicio
+  formConfigSemestre.sem2Fim = configsSemestre.sem2Fim
+  modalConfigSemestre.value = true
+}
+
+const salvarConfigSemestre = async () => {
+  if (!configuracaoSemestreId.value) return Swal.fire('Erro', 'ID de configuração não encontrado', 'error')
+  
+  try {
+    const jsonStr = JSON.stringify(formConfigSemestre)
+    await atualizarRecursoExtra(configuracaoSemestreId.value, { nome: jsonStr })
+    
+    configsSemestre.sem1Inicio = formConfigSemestre.sem1Inicio
+    configsSemestre.sem1Fim = formConfigSemestre.sem1Fim
+    configsSemestre.sem2Inicio = formConfigSemestre.sem2Inicio
+    configsSemestre.sem2Fim = formConfigSemestre.sem2Fim
+    
+    modalConfigSemestre.value = false
+    Swal.fire('Sucesso', 'Datas do período letivo atualizadas com sucesso!', 'success')
+  } catch(e) {
+    Swal.fire('Erro', 'Falha ao salvar novas datas', 'error')
+  }
+}
 
 const novoRecursoNome = ref('')
-const modoCadastroRecurso = ref(false)
+const novoProfessorNome = ref('')
+const novoProfessorCurso = ref('')
+const novoCursoNome = ref('')
+const presetSelecionado = ref('')
+const novoPresetNome = ref('')
+
+const modalCadastro = ref({ aberto: false, tipo: '' })
+
+const abrirModalCadastro = (tipo) => {
+  modalCadastro.value = { aberto: true, tipo }
+}
+
+const fecharModalCadastro = () => {
+  modalCadastro.value.aberto = false
+}
+
+const professoresDisponiveisObj = computed(() => {
+  return recursosExtras.value.filter(r => r.categoria === 'professor').map(r => {
+    const partes = r.nome.split('||')
+    return { nome: partes[0], curso: partes[1] || '', originalNome: r.nome }
+  })
+})
+const professoresDisponiveis = computed(() => professoresDisponiveisObj.value)
+const cursosDisponiveis = computed(() => recursosExtras.value.filter(r => r.categoria === 'curso').map(r => r.nome))
+const presetsDisponiveis = computed(() => recursosExtras.value.filter(r => r.categoria === 'preset_horario'))
 
 const salvarNovoRecurso = async () => {
   if (!novoRecursoNome.value.trim()) return
@@ -201,9 +455,135 @@ const salvarNovoRecurso = async () => {
     renderizarCamposRecursoDinamico()
     form.recurso = nome
     novoRecursoNome.value = ''
-    modoCadastroRecurso.value = false
+    fecharModalCadastro()
   } catch(e) {
-    alert("Falha ao salvar o novo recurso.")
+    Swal.fire('Erro', 'Falha ao salvar o novo recurso.', 'error')
+  }
+}
+
+const salvarNovoProfessor = async () => {
+  if (!novoProfessorNome.value.trim()) return
+  try {
+    const nomeBase = novoProfessorNome.value.trim()
+    const nomeFinal = novoProfessorCurso.value ? `${nomeBase}||${novoProfessorCurso.value}` : nomeBase
+    
+    await adicionarRecursoExtra('Geral', 'professor', nomeFinal)
+    form.professor = nomeBase
+    if (novoProfessorCurso.value) {
+      form.curso = novoProfessorCurso.value
+    }
+    
+    novoProfessorNome.value = ''
+    novoProfessorCurso.value = ''
+    fecharModalCadastro()
+  } catch(e) {
+    Swal.fire('Erro', 'Falha ao salvar o novo professor.', 'error')
+  }
+}
+
+const aoSelecionarProfessor = () => {
+  const profObj = professoresDisponiveis.value.find(p => p.nome === form.professor)
+  if (profObj && profObj.curso) {
+    form.curso = profObj.curso
+  }
+}
+
+const salvarNovoCurso = async () => {
+  if (!novoCursoNome.value.trim()) return
+  try {
+    const nome = novoCursoNome.value.trim()
+    await adicionarRecursoExtra('Geral', 'curso', nome)
+    form.curso = nome
+    novoCursoNome.value = ''
+    fecharModalCadastro()
+  } catch(e) {
+    Swal.fire('Erro', 'Falha ao salvar o novo curso.', 'error')
+  }
+}
+
+const salvarNovoPreset = async () => {
+  if (!novoPresetNome.value.trim()) return
+  
+  if (!form.dataInicio || !form.horaInicio || !form.horaFim || !form.tipoAgendamento) {
+    Swal.fire('Atenção', 'Preencha ao menos o modelo de distribuição, data inicial, hora de início e hora de término para salvar um preset.', 'warning')
+    return
+  }
+
+  if (form.horaInicio >= form.horaFim) {
+    Swal.fire('Atenção', 'A hora de término deve ser posterior à hora de início para salvar o preset.', 'warning')
+    return
+  }
+  
+  try {
+    const presetData = {
+      tipoAgendamento: form.tipoAgendamento,
+      dataInicio: form.dataInicio,
+      dataFim: form.dataFim,
+      diasSemana: [...form.diasSemana],
+      horaInicio: form.horaInicio,
+      horaFim: form.horaFim
+    }
+    
+    // Armazena no banco de dados como JSON string acoplada ao nome
+    const nomeCustom = `${novoPresetNome.value.trim()}||${JSON.stringify(presetData)}`
+    
+    await adicionarRecursoExtra('Geral', 'preset_horario', nomeCustom)
+    presetSelecionado.value = nomeCustom
+    novoPresetNome.value = ''
+    fecharModalCadastro()
+  } catch(e) {
+    Swal.fire('Erro', 'Falha ao salvar o preset.', 'error')
+  }
+}
+
+const carregarPreset = () => {
+  if (!presetSelecionado.value) return
+  try {
+    const jsonStr = presetSelecionado.value.split('||')[1]
+    const data = JSON.parse(jsonStr)
+    form.tipoAgendamento = data.tipoAgendamento || ''
+    form.dataInicio = data.dataInicio || ''
+    form.dataFim = data.dataFim || ''
+    form.diasSemana = data.diasSemana || []
+    form.horaInicio = data.horaInicio || ''
+    form.horaFim = data.horaFim || ''
+  } catch(e) {
+    console.error("Erro ao fazer parse do preset:", e)
+  }
+}
+
+const apagarRecursoExtra = async (categoria, nomeReferencia) => {
+  if (!nomeReferencia) return
+  
+  const result = await Swal.fire({
+    title: 'Tem certeza?',
+    text: `Deseja apagar permanentemente '${nomeReferencia.split('||')[0]}'?`,
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonColor: '#ef4444',
+    cancelButtonColor: '#6b7280',
+    confirmButtonText: 'Sim, apagar!',
+    cancelButtonText: 'Cancelar'
+  })
+  
+  if (!result.isConfirmed) return
+  
+  const rec = recursosExtras.value.find(r => r.categoria === categoria && r.nome === nomeReferencia)
+  if (!rec) {
+    // Tenta procurar pelo nome puro se não achou (fallback)
+    const recFallback = recursosExtras.value.find(r => r.nome === nomeReferencia)
+    if (!recFallback) return
+    await deletarRecursoExtra(recFallback.id)
+  } else {
+    await deletarRecursoExtra(rec.id)
+  }
+
+  if (categoria === 'preset_horario') presetSelecionado.value = ''
+  else if (categoria === 'professor') form.professor = ''
+  else if (categoria === 'curso') form.curso = ''
+  else {
+    form.recurso = ''
+    renderizarCamposRecursoDinamico()
   }
 }
 
@@ -225,20 +605,28 @@ const form = reactive({
 
 const recursosDisponiveis = ref([])
 
-const blocosConfig = {
-  "Araras": ["Bloco A", "Bloco B", "Bloco C"],
-  "SBO": ["Bloco 1", "Bloco 2", "Bloco 3"]
-}
-
-const labsMetodologiaFixos = [
-  "SL 01 - AZUL ESCURO", "SL 02 - AMARELA", "SL 03 - AZUL CLARO", "SL 04 - LARANJA",
-  "SL 05 - ROXA", "SL 06 - VERDE", "SL 07 - AZUL ESCURO", "SL 08 - AMARELA",
-  "SL 09 - AZUL CLARO", "SL 10 - LARANJA", "SL 11 - ROXA", "SL 12 - VERDE"
-]
-
 onMounted(async () => {
   await carregarReservas()
   await carregarRecursosExtras()
+  
+  const config = recursosExtras.value.find(r => r.categoria === 'configuracao_semestre')
+  if (config) {
+    configuracaoSemestreId.value = config.id
+    try {
+      const parsed = JSON.parse(config.nome)
+      configsSemestre.sem1Inicio = parsed.sem1Inicio || configsSemestre.sem1Inicio
+      configsSemestre.sem1Fim = parsed.sem1Fim || configsSemestre.sem1Fim
+      configsSemestre.sem2Inicio = parsed.sem2Inicio || configsSemestre.sem2Inicio
+      configsSemestre.sem2Fim = parsed.sem2Fim || configsSemestre.sem2Fim
+    } catch(e) { console.error('Erro ao ler config_semestre') }
+  } else {
+    adicionarRecursoExtra('Geral', 'configuracao_semestre', JSON.stringify(configsSemestre)).then(() => {
+      carregarRecursosExtras().then(() => {
+        const c = recursosExtras.value.find(r => r.categoria === 'configuracao_semestre')
+        if (c) configuracaoSemestreId.value = c.id
+      })
+    })
+  }
 })
 
 const renderizarCamposRecursoDinamico = () => {
@@ -248,28 +636,25 @@ const renderizarCamposRecursoDinamico = () => {
     return
   }
 
+  const extras = recursosExtras.value
+    .filter(r => r.campus === form.campus && r.categoria === form.categoria)
+    .map(r => r.nome)
+  
   let lista = []
-  const blocos = blocosConfig[form.campus]
-
-  if (form.categoria === 'metodologias') lista = labsMetodologiaFixos
-  else if (form.categoria === 'informatica') {
-    blocos.forEach(b => { lista.push(`${b} - Lab 1`, `${b} - Lab 2`, `${b} - Lab 3`) })
-  } else if (form.categoria === 'salas') {
-    blocos.forEach(b => { lista.push(`${b} - Sala 1`, `${b} - Sala 2`, `${b} - Sala 3`) })
+  
+  if (form.categoria === 'metodologias') {
+    lista = [
+      "SL 01 - AZUL ESCURO", "SL 02 - AMARELA", "SL 03 - AZUL CLARO", "SL 04 - LARANJA",
+      "SL 05 - ROXA", "SL 06 - VERDE", "SL 07 - AZUL ESCURO", "SL 08 - AMARELA",
+      "SL 09 - AZUL CLARO", "SL 10 - LARANJA", "SL 11 - ROXA", "SL 12 - VERDE"
+    ]
   } else if (form.categoria === 'notebooks') {
     lista = ["Notebook 1", "Notebook 2"]
   } else if (form.categoria === 'videoconf') {
     lista = ["Camera"]
   }
 
-  if (form.categoria === 'informatica' || form.categoria === 'salas') {
-    const extras = recursosExtras.value
-      .filter(r => r.campus === form.campus && r.categoria === form.categoria)
-      .map(r => r.nome)
-    lista.push(...extras)
-  }
-  
-  recursosDisponiveis.value = lista
+  recursosDisponiveis.value = [...lista, ...extras]
 }
 
 const alternarTipoAgendamento = () => {
@@ -293,26 +678,54 @@ const verificarConflitoHorario = (h1Inicio, h1Fim, h2Inicio, h2Fim) => {
 }
 
 const processarAgendamento = async () => {
-  if (modoCadastroRecurso.value) {
-    alert("Por favor, clique em 'Salvar' para concluir o cadastro do novo recurso ou em 'Cancelar Cadastro' antes de processar a reserva.")
+  if (modalCadastro.value.aberto) {
+    Swal.fire('Atenção', "Por favor, conclua o cadastro ou feche o modal antes de processar a reserva.", 'warning')
     return
   }
 
   if (!form.campus || !form.categoria || !form.recurso || !form.tipoAgendamento || !form.dataInicio || !form.dataFim || !form.horaInicio || !form.horaFim || !form.disciplina || !form.professor || !form.curso) {
-    alert("Por favor, preencha todos os campos e seleções obrigatórias.")
+    Swal.fire('Atenção', "Por favor, preencha todos os campos e seleções obrigatórias.", 'warning')
+    return
+  }
+
+  if (form.tipoAgendamento === 'periodo' && (!form.diasSemana || form.diasSemana.length === 0)) {
+    Swal.fire('Atenção', 'Selecione ao menos um dia da semana para a recorrência.', 'warning')
+    return
+  }
+
+  if (form.horaInicio >= form.horaFim) {
+    Swal.fire('Atenção', 'A hora de término deve ser posterior à hora de início.', 'warning')
     return
   }
 
   let dataAtual = new Date(form.dataInicio + 'T00:00:00')
   const dataFimLimit = new Date(form.dataFim + 'T00:00:00')
 
+  if (dataFimLimit < dataAtual) {
+    Swal.fire('Atenção', 'A data final não pode ser anterior à data inicial.', 'warning')
+    return
+  }
+
   let salvos = 0
   let conflitos = []
   let novasReservas = []
+  
+  // Feriados variam por semestre e devem se adaptar ao ano configurado
+  const anoFeriados = configsSemestre.sem1Inicio ? configsSemestre.sem1Inicio.substring(0, 4) : new Date().getFullYear()
+  const feriados = semestreAtivo.value === '1' 
+    ? [`${anoFeriados}-04-03`, `${anoFeriados}-04-21`, `${anoFeriados}-05-01`, `${anoFeriados}-06-04`]
+    : [`${anoFeriados}-09-07`, `${anoFeriados}-10-12`, `${anoFeriados}-11-02`, `${anoFeriados}-11-15`]
 
   while (dataAtual <= dataFimLimit) {
+    const dataIso = dataAtual.toISOString().split('T')[0]
+    
+    // Pula os feriados apenas se for um agendamento recorrente (lote)
+    if (form.tipoAgendamento === 'periodo' && feriados.includes(dataIso)) {
+      dataAtual.setDate(dataAtual.getDate() + 1)
+      continue
+    }
+
     if (form.tipoAgendamento === 'pontual' || form.diasSemana.includes(dataAtual.getDay().toString())) {
-      const dataIso = dataAtual.toISOString().split('T')[0]
       const dataBr = dataIso.split('-').reverse().join('/')
 
       const choque = reservas.value.find(i => 
@@ -344,14 +757,23 @@ const processarAgendamento = async () => {
   }
 
   try {
+    if (novasReservas.length === 0 && conflitos.length === 0) {
+      Swal.fire('Atenção', 'Nenhuma data válida encontrada no período para os dias selecionados.', 'info')
+      return
+    }
+
     if (novasReservas.length > 0) {
       await adicionarReservas(novasReservas)
     }
 
     if (conflitos.length > 0) {
-      alert(`✅ ${salvos} reservas confirmadas.\n❌ [CONFLITOS BLOQUEADOS]:\n` + conflitos.join('\n'))
+      Swal.fire({
+        title: `${salvos} reservas confirmadas`,
+        html: `❌ <b>CONFLITOS BLOQUEADOS:</b><br/>` + conflitos.join('<br/>'),
+        icon: 'warning'
+      })
     } else {
-      alert(`Sucesso! ${salvos} reserva(s) adicionada(s) no banco de dados.`)
+      Swal.fire('Sucesso!', `${salvos} reserva(s) adicionada(s) no banco de dados.`, 'success')
     }
 
     // Reset form maintaining campus/categoria for convenience
@@ -366,7 +788,7 @@ const processarAgendamento = async () => {
     form.curso = ''
   } catch (error) {
     console.error("ERRO SUPABASE:", error)
-    alert("❌ Falha crítica ao salvar no banco de dados.\n\nDetalhe: " + (error.message || "Verifique se sua chave do Supabase está correta e se a tabela 'reservas' existe."))
+    Swal.fire('Falha crítica', error.message || "Verifique se sua chave do Supabase está correta e se a tabela 'reservas' existe.", 'error')
   }
 }
 </script>
@@ -479,5 +901,41 @@ const processarAgendamento = async () => {
   height: 16px;
   cursor: pointer;
   accent-color: var(--primary-color);
+}
+
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0,0,0,0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  backdrop-filter: blur(2px);
+}
+.modal-content {
+  background: var(--card-bg);
+  padding: 32px;
+  border-radius: 12px;
+  width: 100%;
+  max-width: 480px;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+  border: 1px solid var(--border-color);
+}
+.input-group {
+  margin-bottom: 16px;
+}
+.input-group label {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-color);
+}
+.input-group input, .input-group select {
+  width: 100%;
 }
 </style>

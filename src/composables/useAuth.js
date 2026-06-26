@@ -10,12 +10,21 @@ const checarAdmin = async (currentUser) => {
     isAdmin.value = false
     return
   }
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from('admin_users')
     .select('email')
     .eq('email', currentUser.email)
     .single()
   
+  if (error && error.code !== 'PGRST116') {
+    // PGRST116 é o erro de 'nenhuma linha encontrada' (o que é normal se não for admin).
+    // Outros erros indicam falta de permissão (RLS) ou tabela inexistente.
+    console.error("Erro no admin_users:", error)
+    import('sweetalert2').then(Swal => {
+      Swal.default.fire('Erro de Permissão (Supabase)', 'O sistema não conseguiu verificar se você é admin. Verifique se a tabela "admin_users" existe e se o RLS (Row Level Security) está desabilitado para leitura.', 'error')
+    })
+  }
+
   isAdmin.value = !!data
 }
 

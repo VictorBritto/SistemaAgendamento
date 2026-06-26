@@ -1,6 +1,6 @@
 <template>
   <div class="agendamento-container">
-    <div class="platform-header" style="display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: 20px;">
+    <div class="platform-header" style="display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: 20px; margin-bottom: 24px;">
       <div>
         <h2>Cronograma de Ocupação</h2>
         <p class="text-muted">Visualize a distribuição dos recursos e gerencie os agendamentos realizados.</p>
@@ -53,11 +53,11 @@
         
         <div>
           <label for="filtroDataInicio">Data Inicial / Única</label>
-          <input type="date" id="filtroDataInicio" v-model="filtros.dataInicio" min="2026-08-10" max="2026-12-18" @change="gerarRelatorio">
+          <input type="date" id="filtroDataInicio" v-model="filtros.dataInicio" :min="configuracaoGlobal.minDate" :max="configuracaoGlobal.maxDate" @change="gerarRelatorio">
         </div>
         <div :style="{ opacity: filtros.modoData === 'individual' ? 0.5 : 1, pointerEvents: filtros.modoData === 'individual' ? 'none' : 'auto' }">
           <label for="filtroDataFim">Data Final</label>
-          <input type="date" id="filtroDataFim" v-model="filtros.dataFim" min="2026-08-10" max="2026-12-18" @change="gerarRelatorio">
+          <input type="date" id="filtroDataFim" v-model="filtros.dataFim" :min="configuracaoGlobal.minDate" :max="configuracaoGlobal.maxDate" @change="gerarRelatorio">
         </div>
         <div>
           <label for="filtroSala">Filtrar por Sala</label>
@@ -106,14 +106,19 @@
                     v-for="info in linha.recursos[col]" 
                     :key="info.id"
                     class="event-card"
-                    :style="{ borderTop: '4px solid ' + estiloCores.borda }"
+                    style="padding: 0; overflow: hidden; display: flex; flex-direction: column;"
                   >
-                    <div class="card-header">
-                       <span class="room-name">{{ info.recurso }}</span>
-                       <span class="badge-status" :class="statusClass(info.status)">{{ statusTexto(info.status) }}</span>
+                    <!-- Header Colorido -->
+                    <div :style="getCorFundoFull(info.recurso)">
+                      <div class="card-header" style="margin-bottom: 0;">
+                         <span class="room-name" style="font-size: 14px; color: inherit;">{{ info.recurso }}</span>
+                         <span class="badge-status" :style="{ backgroundColor: statusBgColor(info.status), color: '#ffffff', border: 'none', padding: '4px 10px' }">{{ statusTexto(info.status) }}</span>
+                      </div>
                     </div>
                     
-                    <div class="time-badge">{{ info.horaInicio }} - {{ info.horaFim }}</div>
+                    <!-- Corpo Branco/Escuro -->
+                    <div style="padding: 16px; background-color: var(--card-bg); flex: 1; display: flex; flex-direction: column;">
+                      <div class="time-badge">{{ info.horaInicio }} - {{ info.horaFim }}</div>
                     
                     <div class="details">
                        <strong>{{ info.disciplina }}</strong>
@@ -134,9 +139,10 @@
                        </select>
                        
                        <div style="display: flex; gap: 8px; width: 100%; justify-content: flex-end;">
-                         <button type="button" class="btn-cancel" style="background-color: #f1f5f9; color: var(--text-color); border-color: var(--border-color);" v-if="isAdmin || info.user_id === user?.id" @click="abrirEdicao(info)">Editar</button>
+                         <button type="button" class="btn-cancel" v-if="isAdmin || info.user_id === user?.id" @click="abrirEdicao(info)">Editar</button>
                          <button type="button" class="btn-cancel" v-if="isAdmin || info.user_id === user?.id" @click="remover(info.id)">Cancelar</button>
                        </div>
+                     </div>
                     </div>
                   </div>
                </template>
@@ -156,7 +162,8 @@
 </template>
 
 <script setup>
-import { reactive, ref, computed, watch } from 'vue'
+import { reactive, ref, computed, watch, onMounted } from 'vue'
+import Swal from 'sweetalert2'
 import DashboardCharts from './DashboardCharts.vue'
 import { useReservas } from '../composables/useReservas'
 import { useAuth } from '../composables/useAuth'
@@ -178,14 +185,37 @@ const salvarEdicao = async (dadosNovos) => {
   reservaEmEdicao.value = null
 }
 
+const configuracaoGlobal = reactive({
+  minDate: '2026-02-23',
+  maxDate: '2026-06-26'
+})
+
 const filtros = reactive({
   campus: '',
   categoria: '',
   modoData: '',
-  dataInicio: '2026-08-10',
-  dataFim: '2026-12-18',
+  dataInicio: '2026-02-23',
+  dataFim: '2026-06-26',
   sala: '',
   professor: ''
+})
+
+onMounted(async () => {
+  await carregarRecursosExtras()
+  const config = recursosExtras.value.find(r => r.categoria === 'configuracao_semestre')
+  if (config) {
+    try {
+      const parsed = JSON.parse(config.nome)
+      const mesAtual = new Date().getMonth()
+      const isSemestre1 = mesAtual <= 5
+      
+      configuracaoGlobal.minDate = parsed.sem1Inicio || '2026-02-23'
+      configuracaoGlobal.maxDate = parsed.sem2Fim || '2026-12-18'
+      
+      filtros.dataInicio = configuracaoGlobal.minDate
+      filtros.dataFim = configuracaoGlobal.maxDate
+    } catch(e) {}
+  }
 })
 
 const temDados = ref(false)
@@ -205,6 +235,40 @@ const coresEstiloMap = {
   "salas": { fundo: "#faf5ff", borda: "#7c3aed" },
   "notebooks": { fundo: "#fff7ed", borda: "#ea580c" },
   "videoconf": { fundo: "#fff1f2", borda: "#e11d48" }
+}
+
+const getCorFundoFull = (recursoNome) => {
+  if (filtros.categoria === 'metodologias' && recursoNome) {
+    const nome = recursoNome.toUpperCase()
+    let bg = null
+    let cor = '#ffffff'
+    
+    if (nome.includes('AZUL ESCURO')) bg = '#1e3a8a'
+    else if (nome.includes('AZUL CLARO')) bg = '#3b82f6'
+    else if (nome.includes('AMARELA')) { bg = '#fde047'; cor = '#854d0e' }
+    else if (nome.includes('LARANJA')) { bg = '#fed7aa'; cor = '#c2410c' }
+    else if (nome.includes('ROXA')) bg = '#a855f7'
+    else if (nome.includes('VERDE')) bg = '#22c55e'
+    
+    if (bg) {
+      return { 
+        backgroundColor: bg, 
+        color: cor, 
+        padding: '12px 16px',
+        fontWeight: 'bold',
+        borderBottom: '1px solid rgba(0,0,0,0.05)'
+      }
+    }
+  }
+  // Fallback para outras categorias
+  return { 
+    backgroundColor: estiloCores.value.fundo, 
+    color: estiloCores.value.borda, 
+    padding: '12px 16px',
+    borderTop: '4px solid ' + estiloCores.value.borda,
+    fontWeight: 'bold',
+    borderBottom: '1px solid var(--border-color)'
+  }
 }
 
 const estiloCores = computed(() => {
@@ -235,6 +299,12 @@ const statusTexto = (status) => {
 
 const statusClass = (status) => {
   return status === 'usado' ? 'status-usado' : status === 'noshow' ? 'status-noshow' : 'status-pendente'
+}
+
+const statusBgColor = (status) => {
+  if (status === 'usado') return '#10b981'
+  if (status === 'noshow') return '#ef4444'
+  return '#f59e0b'
 }
 
 const obterListaRecursosDisponiveis = (campus, categoria) => {
@@ -271,7 +341,7 @@ const obterListaRecursosDisponiveis = (campus, categoria) => {
 
 const alternarModoFiltroData = () => {
   if (filtros.modoData === 'periodo') {
-    filtros.dataFim = "2026-12-18"
+    filtros.dataFim = configuracaoGlobal.maxDate
   }
   gerarRelatorio()
 }
@@ -351,21 +421,44 @@ const mudarStatus = async (id, novoStatus) => {
 }
 
 const remover = async (id) => {
-  if (confirm("Deseja deletar esta reserva?")) {
+  const result = await Swal.fire({
+    title: 'Confirmar exclusão?',
+    text: "Você não poderá reverter isso!",
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonColor: '#d33',
+    cancelButtonColor: '#3085d6',
+    confirmButtonText: 'Sim, deletar!'
+  })
+  
+  if (result.isConfirmed) {
     await deletarReserva(id)
     gerarRelatorio()
   }
 }
 
 const confirmarLimpeza = async () => {
-  if (confirm("Limpar permanentemente todas as reservas?")) {
+  const result = await Swal.fire({
+    title: 'Limpar tudo?',
+    text: "Isso removerá todas as reservas permanentemente.",
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonColor: '#dc2626',
+    cancelButtonColor: '#6b7280',
+    confirmButtonText: 'Confirmar'
+  })
+  
+  if (result.isConfirmed) {
     await limparBanco()
     gerarRelatorio()
   }
 }
 
 const exportarExcel = async () => {
-  if (reservas.value.length === 0) return alert("Sem dados para exportar.")
+  if (reservas.value.length === 0) {
+    Swal.fire('Atenção', 'Sem dados para exportar.', 'info')
+    return
+  }
   
   const workbook = new ExcelJS.Workbook()
   workbook.creator = 'Plataforma Unificada'

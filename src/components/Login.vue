@@ -33,6 +33,7 @@
 <script setup>
 import { ref } from 'vue'
 import { useAuth } from '../composables/useAuth'
+import Swal from 'sweetalert2'
 
 const { login, register, authError } = useAuth()
 
@@ -52,7 +53,7 @@ const handleSubmit = async () => {
   } else {
     response = await register(email.value, password.value)
     if (!response.error) {
-      alert("Conta criada com sucesso! Você já pode entrar.")
+      Swal.fire('Sucesso!', 'Conta criada com sucesso! Você já pode entrar.', 'success')
       isLogin.value = true
       password.value = ''
     }

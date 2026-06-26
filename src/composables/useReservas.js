@@ -30,6 +30,31 @@ export function useReservas() {
     }
   }
 
+  const deletarRecursoExtra = async (id) => {
+    try {
+      const { error } = await supabase.from('recursos_extras').delete().eq('id', id)
+      if (error) throw error
+      recursosExtras.value = recursosExtras.value.filter(item => item.id !== id)
+    } catch (error) {
+      console.error('Erro ao deletar recurso extra:', error)
+      throw error
+    }
+  }
+
+  const atualizarRecursoExtra = async (id, novosDados) => {
+    try {
+      const { error } = await supabase.from('recursos_extras').update(novosDados).eq('id', id)
+      if (error) throw error
+      const index = recursosExtras.value.findIndex(item => item.id === id)
+      if (index !== -1) {
+        recursosExtras.value[index] = { ...recursosExtras.value[index], ...novosDados }
+      }
+    } catch(error) {
+      console.error('Erro ao atualizar recurso extra:', error)
+      throw error
+    }
+  }
+
   const carregarReservas = async () => {
     try {
       const { data, error } = await supabase.from('reservas').select('*')
@@ -128,6 +153,8 @@ export function useReservas() {
     recursosExtras,
     carregarRecursosExtras,
     adicionarRecursoExtra,
+    deletarRecursoExtra,
+    atualizarRecursoExtra,
     carregarReservas,
     adicionarReservas,
     atualizarStatus,

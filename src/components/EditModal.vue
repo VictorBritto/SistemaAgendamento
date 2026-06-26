@@ -49,6 +49,7 @@
 
 <script setup>
 import { reactive, watch } from 'vue'
+import Swal from 'sweetalert2'
 
 const props = defineProps({
   reserva: {
@@ -81,7 +82,11 @@ watch(() => props.reserva, (newVal) => {
 
 const salvar = () => {
   if (!form.disciplina || !form.professor || !form.horaInicio || !form.horaFim) {
-    alert("Preencha todos os campos obrigatórios.")
+    Swal.fire('Atenção', 'Preencha todos os campos obrigatórios.', 'warning')
+    return
+  }
+  if (form.horaInicio >= form.horaFim) {
+    Swal.fire('Atenção', 'A hora de término deve ser posterior à hora de início.', 'warning')
     return
   }
   emit('salvar', { ...props.reserva, ...form })
