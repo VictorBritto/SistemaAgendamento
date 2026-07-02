@@ -119,6 +119,42 @@ export function useReservas() {
     }
   }
 
+  const deletarReservasLote = async (filtrosLote) => {
+    try {
+      const { recurso, professor, dataInicio, dataFim, diasSemana, horaInicio, horaFim } = filtrosLote
+      
+      const reservasParaDeletar = reservas.value.filter(item => {
+        if (recurso && (!item.recurso || item.recurso !== recurso)) return false
+        if (professor && (!item.professor || !item.professor.toLowerCase().includes(professor.toLowerCase()))) return false
+        if (dataInicio && item.dataIso < dataInicio) return false
+        if (dataFim && item.dataIso > dataFim) return false
+        if (horaInicio && item.horaInicio < horaInicio) return false
+        if (horaFim && item.horaFim > horaFim) return false
+        if (diasSemana && diasSemana.length > 0) {
+          const dataObj = new Date(item.dataIso + 'T12:00:00')
+          const dia = dataObj.getDay().toString()
+          if (!diasSemana.includes(dia)) return false
+        }
+        return true
+      })
+
+      if (reservasParaDeletar.length === 0) {
+        throw new Error('Nenhuma reserva encontrada com esses filtros.')
+      }
+
+      const idsParaDeletar = reservasParaDeletar.map(r => r.id)
+
+      const { error } = await supabase.from('reservas').delete().in('id', idsParaDeletar)
+      if (error) throw error
+      
+      reservas.value = reservas.value.filter(item => !idsParaDeletar.includes(item.id))
+      return reservasParaDeletar.length
+    } catch (error) {
+      console.error('Erro ao deletar reservas em lote:', error)
+      throw error
+    }
+  }
+
   const atualizarReserva = async (id, dadosAtualizados) => {
     try {
       const { error } = await supabase.from('reservas').update({
@@ -159,6 +195,7 @@ export function useReservas() {
     adicionarReservas,
     atualizarStatus,
     deletarReserva,
+    deletarReservasLote,
     atualizarReserva,
     limparBanco
   }

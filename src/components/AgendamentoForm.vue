@@ -35,9 +35,12 @@
               </select>
             </div>
             <div style="grid-column: 1 / -1;">
-              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+              <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 6px; flex-wrap: wrap; gap: 8px;">
                 <label style="margin-bottom: 0;">Recurso Específico</label>
-                <div style="display: flex; gap: 8px;">
+                <div style="display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end;">
+                  <button v-if="form.recurso && recursosDisponiveis.includes(form.recurso)" type="button" @click="editarRecursoExtra(form.categoria, form.recurso)" class="btn-cadastrar-recurso" style="padding: 4px 10px; font-size: 11px; color: #f59e0b; border-color: #fcd34d;" title="Editar recurso selecionado">
+                    Editar
+                  </button>
                   <button v-if="form.recurso && recursosDisponiveis.includes(form.recurso)" type="button" @click="apagarRecursoExtra(form.categoria, form.recurso)" class="btn-cadastrar-recurso" style="padding: 4px 10px; font-size: 11px; color: #ef4444; border-color: #fca5a5;" title="Apagar recurso selecionado">
                     Apagar
                   </button>
@@ -72,7 +75,10 @@
                   <option value="">-- Carregar um preset de horário (Opcional) --</option>
                   <option v-for="preset in presetsDisponiveis" :key="preset.id" :value="preset.nome">{{ preset.nome.split('||')[0] }}</option>
                 </select>
-                <div style="margin-top: 6px; display: flex; justify-content: flex-end; gap: 8px;">
+                <div style="margin-top: 6px; display: flex; justify-content: flex-end; gap: 8px; flex-wrap: wrap;">
+                  <button v-if="presetSelecionado" type="button" @click="editarRecursoExtra('preset_horario', presetSelecionado)" class="btn-cadastrar-recurso" style="padding: 4px 10px; font-size: 11px; color: #f59e0b; border-color: #fcd34d;">
+                    Editar Preset
+                  </button>
                   <button v-if="presetSelecionado" type="button" @click="apagarRecursoExtra('preset_horario', presetSelecionado)" class="btn-cadastrar-recurso" style="padding: 4px 10px; font-size: 11px; color: #ef4444; border-color: #fca5a5;">
                     Apagar Preset
                   </button>
@@ -108,13 +114,15 @@
               </select>
             </div>
 
-            <div>
-              <label for="dateInicio">Data Inicial</label>
-              <input type="date" id="dateInicio" v-model="form.dataInicio" :min="minDate" :max="maxDate" @change="() => { replicarDataPontual(); validarInputManual() }" required>
-            </div>
-            <div :style="{ opacity: form.tipoAgendamento === 'pontual' || !form.tipoAgendamento ? 0.5 : 1 }">
-              <label for="dateFim">Data Final</label>
-              <input type="date" id="dateFim" v-model="form.dataFim" :min="minDate" :max="maxDate" :disabled="form.tipoAgendamento === 'pontual' || !form.tipoAgendamento" @change="validarInputManual" required>
+            <div style="grid-column: 1 / -1; display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 130px), 1fr)); gap: 16px;">
+              <div>
+                <label for="dateInicio">Data Inicial</label>
+                <input type="date" id="dateInicio" v-model="form.dataInicio" :min="minDate" :max="maxDate" @change="() => { replicarDataPontual(); validarInputManual() }" required>
+              </div>
+              <div :style="{ opacity: form.tipoAgendamento === 'pontual' || !form.tipoAgendamento ? 0.5 : 1 }">
+                <label for="dateFim">Data Final</label>
+                <input type="date" id="dateFim" v-model="form.dataFim" :min="minDate" :max="maxDate" :disabled="form.tipoAgendamento === 'pontual' || !form.tipoAgendamento" @change="validarInputManual" required>
+              </div>
             </div>
 
             <div v-show="form.tipoAgendamento === 'periodo'" style="grid-column: 1 / -1;">
@@ -130,13 +138,15 @@
               </div>
             </div>
 
-            <div>
-              <label for="horaInicio">Hora Início</label>
-              <input type="time" id="horaInicio" v-model="form.horaInicio" required>
-            </div>
-            <div>
-              <label for="horaFim">Hora Término</label>
-              <input type="time" id="horaFim" v-model="form.horaFim" required>
+            <div style="grid-column: 1 / -1; display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 130px), 1fr)); gap: 16px;">
+              <div>
+                <label for="horaInicio">Hora Início</label>
+                <input type="time" id="horaInicio" v-model="form.horaInicio" required>
+              </div>
+              <div>
+                <label for="horaFim">Hora Término</label>
+                <input type="time" id="horaFim" v-model="form.horaFim" required>
+              </div>
             </div>
           </div>
         </div>
@@ -160,7 +170,10 @@
                   <option value="">-- Selecione o Professor --</option>
                   <option v-for="prof in professoresDisponiveis" :key="prof.nome" :value="prof.nome">{{ prof.nome }}</option>
                 </select>
-                <div style="margin-top: 6px; display: flex; justify-content: flex-end; gap: 8px;">
+                <div style="margin-top: 6px; display: flex; justify-content: flex-end; gap: 8px; flex-wrap: wrap;">
+                  <button v-if="form.professor" type="button" @click="editarRecursoExtra('professor', professoresDisponiveisObj.find(p => p.nome === form.professor)?.originalNome)" class="btn-cadastrar-recurso" style="padding: 4px 10px; font-size: 11px; color: #f59e0b; border-color: #fcd34d;">
+                    Editar Prof.
+                  </button>
                   <button v-if="form.professor" type="button" @click="apagarRecursoExtra('professor', professoresDisponiveisObj.find(p => p.nome === form.professor)?.originalNome)" class="btn-cadastrar-recurso" style="padding: 4px 10px; font-size: 11px; color: #ef4444; border-color: #fca5a5;">
                     Apagar Prof.
                   </button>
@@ -179,7 +192,10 @@
                   <option value="">-- Selecione o Curso --</option>
                   <option v-for="cur in cursosDisponiveis" :key="cur" :value="cur">{{ cur }}</option>
                 </select>
-                <div style="margin-top: 6px; display: flex; justify-content: flex-end; gap: 8px;">
+                <div style="margin-top: 6px; display: flex; justify-content: flex-end; gap: 8px; flex-wrap: wrap;">
+                  <button v-if="form.curso" type="button" @click="editarRecursoExtra('curso', form.curso)" class="btn-cadastrar-recurso" style="padding: 4px 10px; font-size: 11px; color: #f59e0b; border-color: #fcd34d;">
+                    Editar Curso
+                  </button>
                   <button v-if="form.curso" type="button" @click="apagarRecursoExtra('curso', form.curso)" class="btn-cadastrar-recurso" style="padding: 4px 10px; font-size: 11px; color: #ef4444; border-color: #fca5a5;">
                     Apagar Curso
                   </button>
@@ -552,6 +568,55 @@ const carregarPreset = () => {
   }
 }
 
+const editarRecursoExtra = async (categoria, nomeReferencia) => {
+  if (!nomeReferencia) return
+  
+  const rec = recursosExtras.value.find(r => r.categoria === categoria && r.nome === nomeReferencia)
+  const recFallback = recursosExtras.value.find(r => r.nome === nomeReferencia)
+  const recursoAlvo = rec || recFallback
+  
+  if (!recursoAlvo) return
+
+  const { value: novoNome } = await Swal.fire({
+    title: `Editar ${categoria === 'preset_horario' ? 'Preset' : categoria === 'professor' ? 'Professor' : categoria === 'curso' ? 'Curso' : 'Recurso'}`,
+    input: 'text',
+    inputValue: nomeReferencia.split('||')[0],
+    showCancelButton: true,
+    confirmButtonText: 'Salvar',
+    cancelButtonText: 'Cancelar',
+    inputValidator: (value) => {
+      if (!value) return 'Você precisa digitar um nome!'
+    }
+  })
+
+  if (novoNome && novoNome.trim() !== '') {
+    try {
+      let nomeFinal = novoNome.trim()
+      if (categoria === 'preset_horario' && nomeReferencia.includes('||')) {
+        const dadosExtras = nomeReferencia.split('||').slice(1).join('||')
+        nomeFinal = `${nomeFinal}||${dadosExtras}`
+      }
+      
+      await atualizarRecursoExtra(recursoAlvo.id, { nome: nomeFinal })
+      await carregarRecursosExtras()
+      
+      Swal.fire('Atualizado!', 'O recurso foi atualizado com sucesso.', 'success')
+      
+      // Atualizar no form se estiver selecionado
+      if (categoria === 'preset_horario' && presetSelecionado.value === nomeReferencia) presetSelecionado.value = nomeFinal
+      else if (categoria === 'professor' && form.professor === nomeReferencia.split('||')[0]) form.professor = novoNome.trim()
+      else if (categoria === 'curso' && form.curso === nomeReferencia) form.curso = nomeFinal
+      else if (form.recurso === nomeReferencia) {
+        form.recurso = nomeFinal
+        renderizarCamposRecursoDinamico()
+      }
+    } catch (e) {
+      console.error(e)
+      Swal.fire('Erro', 'Falha ao editar o recurso.', 'error')
+    }
+  }
+}
+
 const apagarRecursoExtra = async (categoria, nomeReferencia) => {
   if (!nomeReferencia) return
   
@@ -728,13 +793,20 @@ const processarAgendamento = async () => {
     if (form.tipoAgendamento === 'pontual' || form.diasSemana.includes(dataAtual.getDay().toString())) {
       const dataBr = dataIso.split('-').reverse().join('/')
 
-      const choque = reservas.value.find(i => 
+      const choqueSala = reservas.value.find(i => 
         i.campus === form.campus && i.categoria === form.categoria && i.recurso === form.recurso &&
         i.data === dataIso && verificarConflitoHorario(form.horaInicio, form.horaFim, i.horaInicio, i.horaFim)
       )
 
-      if (choque) {
-        conflitos.push(`${dataBr} [${form.horaInicio}-${form.horaFim}]`)
+      const choqueProfessor = reservas.value.find(i => 
+        i.professor === form.professor &&
+        i.data === dataIso && verificarConflitoHorario(form.horaInicio, form.horaFim, i.horaInicio, i.horaFim)
+      )
+
+      if (choqueSala) {
+        conflitos.push(`${dataBr} [${form.horaInicio}-${form.horaFim}] - Choque de Sala`)
+      } else if (choqueProfessor) {
+        conflitos.push(`${dataBr} [${form.horaInicio}-${form.horaFim}] - Prof. ocupado (${choqueProfessor.recurso})`)
       } else {
         novasReservas.push({
           id: 'id_' + Math.random().toString(36).substr(2, 9),
@@ -769,7 +841,10 @@ const processarAgendamento = async () => {
     if (conflitos.length > 0) {
       Swal.fire({
         title: `${salvos} reservas confirmadas`,
-        html: `❌ <b>CONFLITOS BLOQUEADOS:</b><br/>` + conflitos.join('<br/>'),
+        html: `❌ <b>CONFLITOS BLOQUEADOS:</b><br/>
+               <div style="max-height: 200px; overflow-y: auto; text-align: left; background: var(--pill-bg, #f1f5f9); padding: 12px; border-radius: 6px; margin-top: 12px; font-size: 13px; border: 1px solid var(--border-color, #e2e8f0); line-height: 1.5;">
+                 ${conflitos.join('<br/>')}
+               </div>`,
         icon: 'warning'
       })
     } else {
@@ -813,11 +888,12 @@ const processarAgendamento = async () => {
   align-items: start;
 }
 
-/* Colocar os cards de seção lado a lado */
+/* Colocar os cards de seção lado a lado, mas sem esticar a altura */
 .form-main {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr));
   gap: 24px;
+  align-items: start;
 }
 
 @media (max-width: 1200px) {
@@ -827,9 +903,8 @@ const processarAgendamento = async () => {
 }
 
 .section-card {
-  padding: 24px;
+  padding: 32px;
   margin-bottom: 0;
-  height: 100%;
 }
 
 .section-header {
@@ -903,27 +978,39 @@ const processarAgendamento = async () => {
   accent-color: var(--primary-color);
 }
 
+@keyframes modalFadeIn {
+  from { opacity: 0; backdrop-filter: blur(0px); }
+  to { opacity: 1; backdrop-filter: blur(4px); }
+}
+
+@keyframes modalSlideUp {
+  from { transform: translateY(30px) scale(0.95); opacity: 0; }
+  to { transform: translateY(0) scale(1); opacity: 1; }
+}
+
 .modal-overlay {
   position: fixed;
   top: 0;
   left: 0;
   width: 100vw;
   height: 100vh;
-  background: rgba(0,0,0,0.5);
+  background: rgba(15, 23, 42, 0.6);
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 1000;
-  backdrop-filter: blur(2px);
+  animation: modalFadeIn 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
 }
 .modal-content {
   background: var(--card-bg);
   padding: 32px;
-  border-radius: 12px;
+  border-radius: var(--radius-lg);
   width: 100%;
   max-width: 480px;
-  box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
   border: 1px solid var(--border-color);
+  animation: modalSlideUp 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+  backdrop-filter: var(--card-blur);
 }
 .input-group {
   margin-bottom: 16px;

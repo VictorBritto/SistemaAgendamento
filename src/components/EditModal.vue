@@ -3,7 +3,7 @@
     <div class="modal-content">
       <h3 style="margin-top: 0; color: var(--primary-color);">Editar Agendamento</h3>
       
-      <div class="alert-info" style="padding: 10px; margin-bottom: 16px; font-size: 13px; text-align: left;">
+      <div class="alert-info" style="padding: 12px; margin-bottom: 16px; font-size: 13px; text-align: left; background: var(--pill-bg); border: 1px solid var(--border-color); border-radius: 8px;">
         <strong>Laboratório:</strong> {{ reserva.recurso }} <br>
         <strong>Data:</strong> {{ reserva.data.split('-').reverse().join('/') }}
       </div>
@@ -40,7 +40,7 @@
       </div>
 
       <div style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 24px;">
-        <button type="button" @click="$emit('fechar')" style="padding: 10px 16px; background: white; border: 1px solid var(--border-color); border-radius: 6px; cursor: pointer; font-weight: 600;">Cancelar</button>
+        <button type="button" @click="$emit('fechar')" class="btn-cancel" style="width: auto; margin: 0; padding: 10px 16px;">Cancelar</button>
         <button type="button" @click="salvar" class="btn-submit" style="width: auto; margin: 0; padding: 10px 24px;">Salvar Alterações</button>
       </div>
     </div>
@@ -107,7 +107,8 @@ const salvar = () => {
   z-index: 1000;
 }
 .modal-content {
-  background: white;
+  background: var(--card-bg);
+  color: var(--text-color);
   padding: 24px;
   border-radius: 12px;
   width: 100%;
@@ -131,5 +132,7 @@ const salvar = () => {
   border-radius: 6px;
   font-family: inherit;
   box-sizing: border-box;
+  background: var(--input-bg);
+  color: var(--text-color);
 }
 </style>

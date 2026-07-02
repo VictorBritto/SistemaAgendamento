@@ -14,6 +14,7 @@
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 6px; vertical-align: text-bottom;"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
           Imprimir
         </button>
+        <button v-if="isAdmin" class="btn-danger" @click="abrirExclusaoLote" style="background-color: #c2410c;">Apagar por Lote</button>
         <button v-if="isAdmin" class="btn-danger" @click="confirmarLimpeza">Apagar Tudo</button>
       </div>
     </div>
@@ -80,16 +81,30 @@
       <div class="card">
         <h3 style="margin-bottom: 16px;">Distribuição de Ocupação (Apenas Reservados)</h3>
         
-        <div v-if="linhasTabela.length > 1" class="day-pills-container">
+        <div v-if="mesesDisponiveis.length > 1" class="month-filters" style="display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px;">
           <button 
-            v-for="linha in linhasTabela" 
+            v-for="mes in mesesDisponiveis" 
+            :key="mes.valor"
+            class="month-tab"
+            :class="{ active: mesFiltroSelecionado === mes.valor }"
+            @click="mesFiltroSelecionado = mes.valor"
+            style="padding: 6px 16px; border-radius: 20px; font-size: 13px; font-weight: 600; border: 1px solid var(--border-color); background: var(--pill-bg); color: var(--text-color); cursor: pointer; transition: all 0.2s;"
+          >
+            {{ mes.rotulo }}
+          </button>
+        </div>
+
+        <div v-if="linhasFiltradasPorMes.length > 0" class="day-pills-container">
+          <button 
+            v-for="linha in linhasFiltradasPorMes" 
             :key="'pill-'+linha.dataIso"
             class="day-pill"
             :class="{ active: diaSelecionado === linha.dataIso }"
             @click="diaSelecionado = linha.dataIso"
           >
-            <strong>{{ linha.dataBr }}</strong>
-            <span>{{ linha.diaSemana }}</span>
+            <span class="pill-weekday">{{ linha.diaSemana }}</span>
+            <strong class="pill-day">{{ linha.dataBr.split('/')[0] }}</strong>
+            <span class="pill-month">{{ mesAbreviado(linha.dataBr.split('/')[1]) }}</span>
           </button>
         </div>
 
@@ -158,6 +173,70 @@
       @fechar="reservaEmEdicao = null" 
       @salvar="salvarEdicao"
     />
+
+    <div v-if="exibindoModalLote" class="modal-overlay">
+      <div class="modal-content" style="max-width: 600px;">
+        <h3 style="margin-top: 0; color: var(--primary-color);">Exceção em Lote</h3>
+        <p class="text-muted" style="margin-bottom: 16px;">Selecione os parâmetros abaixo para cancelar as agendas em lote.</p>
+        
+        <div class="input-grid" style="grid-template-columns: 1fr 1fr; gap: 12px;">
+          <div>
+            <label>Sala / Recurso</label>
+            <input type="text" v-model="filtroLote.recurso" placeholder="Opcional (Ex: SL 01)">
+          </div>
+          <div>
+            <label>Professor</label>
+            <input type="text" v-model="filtroLote.professor" placeholder="Opcional (Ex: Nome)">
+          </div>
+          <div>
+            <label>Data Inicial (Opcional)</label>
+            <input type="date" v-model="filtroLote.dataInicio">
+          </div>
+          <div>
+            <label>Data Final (Opcional)</label>
+            <input type="date" v-model="filtroLote.dataFim">
+          </div>
+          <div>
+            <label>Hora Início (Opcional)</label>
+            <input type="time" v-model="filtroLote.horaInicio">
+          </div>
+          <div>
+            <label>Hora Fim (Opcional)</label>
+            <input type="time" v-model="filtroLote.horaFim">
+          </div>
+          
+          <div style="grid-column: 1 / -1;">
+            <label>Dias da Semana (Opcional)</label>
+            <div style="display: flex; flex-wrap: wrap; gap: 12px; margin-top: 4px; background: var(--input-bg); padding: 12px; border: 1px solid var(--border-color); border-radius: 6px;">
+              <label style="cursor:pointer; display:flex; gap: 4px; align-items: center; margin: 0;"><input type="checkbox" value="1" v-model="filtroLote.diasSemana"> Segunda</label>
+              <label style="cursor:pointer; display:flex; gap: 4px; align-items: center; margin: 0;"><input type="checkbox" value="2" v-model="filtroLote.diasSemana"> Terça</label>
+              <label style="cursor:pointer; display:flex; gap: 4px; align-items: center; margin: 0;"><input type="checkbox" value="3" v-model="filtroLote.diasSemana"> Quarta</label>
+              <label style="cursor:pointer; display:flex; gap: 4px; align-items: center; margin: 0;"><input type="checkbox" value="4" v-model="filtroLote.diasSemana"> Quinta</label>
+              <label style="cursor:pointer; display:flex; gap: 4px; align-items: center; margin: 0;"><input type="checkbox" value="5" v-model="filtroLote.diasSemana"> Sexta</label>
+              <label style="cursor:pointer; display:flex; gap: 4px; align-items: center; margin: 0;"><input type="checkbox" value="6" v-model="filtroLote.diasSemana"> Sábado</label>
+              <label style="cursor:pointer; display:flex; gap: 4px; align-items: center; margin: 0;"><input type="checkbox" value="0" v-model="filtroLote.diasSemana"> Domingo</label>
+            </div>
+          </div>
+        </div>
+        
+        <div v-if="reservasAExcluir.length > 0" style="margin-top: 16px; border: 1px solid var(--border-color); border-radius: 6px; padding: 12px; background: var(--pill-bg); max-height: 150px; overflow-y: auto;">
+          <div style="font-size: 13px; font-weight: bold; color: var(--text-color); margin-bottom: 8px;">
+            Aviso: {{ reservasAExcluir.length }} agendamento(s) serão apagado(s):
+          </div>
+          <div v-for="res in reservasAExcluir" :key="res.id" style="font-size: 12px; color: var(--text-muted); border-bottom: 1px solid #e2e8f0; padding-bottom: 4px; margin-bottom: 4px;">
+            <strong>{{ res.recurso }}</strong> | {{ res.data.split('-').reverse().join('/') }} ({{ res.horaInicio }}) - {{ res.professor }}
+          </div>
+        </div>
+        <div v-else-if="filtroLote.recurso || filtroLote.professor" style="margin-top: 16px; font-size: 13px; color: #ef4444;">
+          Nenhum agendamento encontrado com esses filtros.
+        </div>
+
+        <div class="modal-actions" style="margin-top: 24px; display: flex; gap: 12px; justify-content: flex-end;">
+          <button type="button" @click="fecharExclusaoLote" class="btn-cancel">Cancelar</button>
+          <button type="button" @click="confirmarExclusaoLote" class="btn-danger" :disabled="(!filtroLote.recurso && !filtroLote.professor) || reservasAExcluir.length === 0">Apagar Registros</button>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -171,7 +250,7 @@ import EditModal from './EditModal.vue'
 import ExcelJS from 'exceljs'
 import { saveAs } from 'file-saver'
 
-const { reservas, carregarReservas, atualizarStatus, deletarReserva, limparBanco, recursosExtras, carregarRecursosExtras, atualizarReserva } = useReservas()
+const { reservas, carregarReservas, atualizarStatus, deletarReserva, deletarReservasLote, limparBanco, recursosExtras, carregarRecursosExtras, atualizarReserva } = useReservas()
 const { user, isAdmin } = useAuth()
 
 const reservaEmEdicao = ref(null)
@@ -180,9 +259,41 @@ const abrirEdicao = (res) => {
   reservaEmEdicao.value = { ...res }
 }
 
+const verificarConflitoHorario = (h1Inicio, h1Fim, h2Inicio, h2Fim) => {
+  return (h1Inicio < h2Fim && h1Fim > h2Inicio)
+}
+
 const salvarEdicao = async (dadosNovos) => {
-  await atualizarReserva(dadosNovos.id, dadosNovos)
-  reservaEmEdicao.value = null
+  const dataIso = dadosNovos.data
+  const reservasValidas = reservas.value.filter(r => r.id !== dadosNovos.id)
+
+  const choqueSala = reservasValidas.find(i => 
+    i.campus === dadosNovos.campus && i.categoria === dadosNovos.categoria && i.recurso === dadosNovos.recurso &&
+    i.data === dataIso && verificarConflitoHorario(dadosNovos.horaInicio, dadosNovos.horaFim, i.horaInicio, i.horaFim)
+  )
+
+  const choqueProfessor = reservasValidas.find(i => 
+    i.professor === dadosNovos.professor &&
+    i.data === dataIso && verificarConflitoHorario(dadosNovos.horaInicio, dadosNovos.horaFim, i.horaInicio, i.horaFim)
+  )
+
+  if (choqueSala) {
+    Swal.fire('Conflito!', `O horário [${dadosNovos.horaInicio}-${dadosNovos.horaFim}] já está ocupado nesta sala por: ${choqueSala.disciplina}`, 'error')
+    return
+  }
+  
+  if (choqueProfessor) {
+    Swal.fire('Conflito!', `O professor selecionado já está alocado neste horário no espaço: ${choqueProfessor.recurso}`, 'error')
+    return
+  }
+
+  try {
+    await atualizarReserva(dadosNovos.id, dadosNovos)
+    reservaEmEdicao.value = null
+    gerarRelatorio()
+  } catch(e) {
+    Swal.fire('Erro', 'Falha ao salvar a edição.', 'error')
+  }
 }
 
 const configuracaoGlobal = reactive({
@@ -226,6 +337,39 @@ const diaSelecionado = ref(null)
 
 const countCat = reactive({ metodologias: 0, informatica: 0, salas: 0, notebooks: 0, videoconf: 0 })
 const countStatus = reactive({ usado: 0, noshow: 0, pendente: 0 })
+
+const mesAbreviado = (mesNum) => {
+  const meses = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
+  return meses[parseInt(mesNum, 10) - 1] || '';
+}
+
+const mesFiltroSelecionado = ref(null)
+
+const mesesDisponiveis = computed(() => {
+  if (!linhasTabela.value.length) return []
+  const mapMeses = new Map()
+  linhasTabela.value.forEach(l => {
+    const mesStr = l.dataIso.substring(0, 7) // "YYYY-MM"
+    if (!mapMeses.has(mesStr)) {
+      const parts = l.dataBr.split('/')
+      mapMeses.set(mesStr, `${mesAbreviado(parts[1])} ${parts[2]}`)
+    }
+  })
+  return Array.from(mapMeses.entries()).map(([valor, rotulo]) => ({ valor, rotulo }))
+})
+
+const linhasFiltradasPorMes = computed(() => {
+  if (!mesFiltroSelecionado.value) return linhasTabela.value
+  return linhasTabela.value.filter(l => l.dataIso.startsWith(mesFiltroSelecionado.value))
+})
+
+// Sempre que o mês selecionado mudar, se houver datas, selecionar a primeira do mês
+watch(mesFiltroSelecionado, (novoMes) => {
+  if (novoMes) {
+    const primeiraLinha = linhasTabela.value.find(l => l.dataIso.startsWith(novoMes))
+    if (primeiraLinha) diaSelecionado.value = primeiraLinha.dataIso
+  }
+})
 
 const diasSemanaTexto = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"]
 
@@ -376,8 +520,8 @@ const gerarRelatorio = async () => {
       if (item.categoria === filtros.categoria) countStatus[item.status]++
     }
     if (item.campus === filtros.campus && item.categoria === filtros.categoria && item.data >= filtros.dataInicio && item.data <= dataFimFiltro) {
-      if (filtros.sala && !item.recurso.toLowerCase().includes(filtros.sala.toLowerCase())) return
-      if (filtros.professor && !item.professor.toLowerCase().includes(filtros.professor.toLowerCase())) return
+      if (filtros.sala && (!item.recurso || !item.recurso.toLowerCase().includes(filtros.sala.toLowerCase()))) return
+      if (filtros.professor && (!item.professor || !item.professor.toLowerCase().includes(filtros.professor.toLowerCase()))) return
       
       if (!mapa[item.data]) mapa[item.data] = {}
       if (!mapa[item.data][item.recurso]) mapa[item.data][item.recurso] = []
@@ -413,6 +557,13 @@ const gerarRelatorio = async () => {
   }
 
   linhasTabela.value.sort((a, b) => a.dataIso.localeCompare(b.dataIso))
+  
+  // Seleciona o primeiro mês disponível automaticamente
+  if (mesesDisponiveis.value.length > 0) {
+    mesFiltroSelecionado.value = mesesDisponiveis.value[0].valor
+  } else {
+    mesFiltroSelecionado.value = null
+  }
 }
 
 const mudarStatus = async (id, novoStatus) => {
@@ -451,6 +602,76 @@ const confirmarLimpeza = async () => {
   if (result.isConfirmed) {
     await limparBanco()
     gerarRelatorio()
+  }
+}
+
+const exibindoModalLote = ref(false)
+const filtroLote = reactive({
+  recurso: '',
+  professor: '',
+  dataInicio: '',
+  dataFim: '',
+  horaInicio: '',
+  horaFim: '',
+  diasSemana: []
+})
+
+const reservasAExcluir = computed(() => {
+  if (!filtroLote.recurso && !filtroLote.professor) return []
+  return reservas.value.filter(item => {
+    if (filtroLote.recurso && (!item.recurso || item.recurso.toLowerCase() !== filtroLote.recurso.toLowerCase())) return false
+    if (filtroLote.professor && (!item.professor || !item.professor.toLowerCase().includes(filtroLote.professor.toLowerCase()))) return false
+    if (filtroLote.dataInicio && item.dataIso < filtroLote.dataInicio) return false
+    if (filtroLote.dataFim && item.dataIso > filtroLote.dataFim) return false
+    if (filtroLote.horaInicio && item.horaInicio < filtroLote.horaInicio) return false
+    if (filtroLote.horaFim && item.horaFim > filtroLote.horaFim) return false
+    if (filtroLote.diasSemana && filtroLote.diasSemana.length > 0) {
+      const dataObj = new Date(item.dataIso + 'T12:00:00')
+      const dia = dataObj.getDay().toString()
+      if (!filtroLote.diasSemana.includes(dia)) return false
+    }
+    return true
+  })
+})
+
+const abrirExclusaoLote = () => {
+  filtroLote.recurso = ''
+  filtroLote.professor = ''
+  filtroLote.dataInicio = ''
+  filtroLote.dataFim = ''
+  filtroLote.horaInicio = ''
+  filtroLote.horaFim = ''
+  filtroLote.diasSemana = []
+  exibindoModalLote.value = true
+}
+
+const fecharExclusaoLote = () => {
+  exibindoModalLote.value = false
+}
+
+const confirmarExclusaoLote = async () => {
+  if (!filtroLote.recurso && !filtroLote.professor) return
+  if (reservasAExcluir.value.length === 0) return
+
+  const result = await Swal.fire({
+    title: 'Apagar agendamentos?',
+    text: `Deseja realmente apagar ${reservasAExcluir.value.length} agendamento(s) que correspondem aos filtros? Esta ação é irreversível.`,
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonColor: '#d33',
+    cancelButtonColor: '#3085d6',
+    confirmButtonText: 'Sim, apagar!'
+  })
+  
+  if (result.isConfirmed) {
+    try {
+      const deletados = await deletarReservasLote({...filtroLote})
+      Swal.fire('Deletado!', `${deletados} agendamento(s) apagado(s) com sucesso.`, 'success')
+      exibindoModalLote.value = false
+      gerarRelatorio()
+    } catch (e) {
+      Swal.fire('Atenção', e.message || 'Falha ao excluir em lote.', 'warning')
+    }
   }
 }
 
@@ -544,3 +765,42 @@ const exportarPDF = () => {
   window.print()
 }
 </script>
+
+<style scoped>
+@keyframes modalFadeIn {
+  from { opacity: 0; backdrop-filter: blur(0px); }
+  to { opacity: 1; backdrop-filter: blur(4px); }
+}
+
+@keyframes modalSlideUp {
+  from { transform: translateY(30px) scale(0.95); opacity: 0; }
+  to { transform: translateY(0) scale(1); opacity: 1; }
+}
+
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(15, 23, 42, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  animation: modalFadeIn 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+.modal-content {
+  background: var(--card-bg);
+  padding: 32px;
+  border-radius: var(--radius-lg);
+  width: 100%;
+  max-width: 480px;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  border: 1px solid var(--border-color);
+  animation: modalSlideUp 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+  backdrop-filter: var(--card-blur);
+  max-height: 90vh;
+  overflow-y: auto;
+}
+</style>

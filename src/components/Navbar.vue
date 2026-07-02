@@ -58,7 +58,7 @@ const deslogar = async () => {
   mudarAba('visualizacao')
 }
 
-const isDark = ref(true)
+const isDark = ref(false)
 
 const toggleTheme = () => {
   isDark.value = !isDark.value
@@ -72,14 +72,7 @@ const toggleTheme = () => {
 }
 
 onMounted(() => {
-  const savedTheme = localStorage.getItem('app-theme')
-  if (savedTheme === 'light') {
-    isDark.value = false
-    document.body.removeAttribute('data-theme')
-  } else {
-    // Default to dark since we just overhauled it
-    isDark.value = true
-    document.body.setAttribute('data-theme', 'dark')
-  }
+  // Sincroniza com o que o App.vue definiu
+  isDark.value = document.body.getAttribute('data-theme') === 'dark'
 })
 </script>

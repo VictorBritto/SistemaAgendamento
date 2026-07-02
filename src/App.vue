@@ -1,5 +1,5 @@
 <script setup>
-import { ref, watch } from 'vue'
+import { ref, watch, onMounted } from 'vue'
 import { useAuth } from './composables/useAuth'
 import Navbar from './components/Navbar.vue'
 import AgendamentoForm from './components/AgendamentoForm.vue'
@@ -13,6 +13,16 @@ const abaAtiva = ref('cadastro')
 watch(user, (newVal) => {
   if (newVal && abaAtiva.value === 'login') {
     abaAtiva.value = 'cadastro'
+  }
+})
+
+// Inicializar o tema preferido do usuário (padrão: claro)
+onMounted(() => {
+  const savedTheme = localStorage.getItem('app-theme')
+  if (savedTheme === 'dark') {
+    document.body.setAttribute('data-theme', 'dark')
+  } else {
+    document.body.removeAttribute('data-theme')
   }
 })
 </script>
