@@ -116,9 +116,9 @@
             </div>
             
             <div class="events-grid">
-               <template v-for="col in colunasFixas" :key="col">
+               <template v-for="(recursosArray, roomName) in linha.recursos" :key="roomName">
                   <div 
-                    v-for="info in linha.recursos[col]" 
+                    v-for="info in recursosArray" 
                     :key="info.id"
                     class="event-card"
                     style="padding: 0; overflow: hidden; display: flex; flex-direction: column;"
