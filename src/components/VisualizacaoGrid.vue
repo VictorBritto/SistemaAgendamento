@@ -108,7 +108,20 @@
           </button>
         </div>
 
-        <div class="agenda-list" v-if="diaSelecionado">
+        <div v-if="carregando" style="margin-top: 24px;">
+          <div style="display: flex; gap: 16px; margin-bottom: 24px;">
+            <div style="height: 36px; width: 60px; background: #e2e8f0; border-radius: 20px; animation: pulse 1.5s infinite;"></div>
+            <div style="height: 36px; width: 60px; background: #e2e8f0; border-radius: 20px; animation: pulse 1.5s infinite; animation-delay: 0.1s;"></div>
+            <div style="height: 36px; width: 60px; background: #e2e8f0; border-radius: 20px; animation: pulse 1.5s infinite; animation-delay: 0.2s;"></div>
+          </div>
+          <div style="height: 30px; width: 200px; background: #e2e8f0; border-radius: 8px; animation: pulse 1.5s infinite; margin-bottom: 16px;"></div>
+          <div class="events-grid">
+            <div style="height: 200px; background: #e2e8f0; border-radius: 12px; animation: pulse 1.5s infinite;"></div>
+            <div style="height: 200px; background: #e2e8f0; border-radius: 12px; animation: pulse 1.5s infinite; animation-delay: 0.2s;"></div>
+            <div style="height: 200px; background: #e2e8f0; border-radius: 12px; animation: pulse 1.5s infinite; animation-delay: 0.4s;"></div>
+          </div>
+        </div>
+        <div class="agenda-list" v-else-if="diaSelecionado">
           <div v-for="linha in linhasTabela.filter(l => l.dataIso === diaSelecionado)" :key="linha.dataIso" class="agenda-day animate-fade">
             <div class="day-header" style="display: flex; justify-content: space-between; align-items: center;">
                <h4>{{ linha.dataBr }} <span style="color: var(--text-muted); font-weight: 400; font-size: 14px; margin-left: 8px;">{{ linha.diaSemana }}</span></h4>
@@ -169,7 +182,8 @@
     
     <EditModal 
       v-if="reservaEmEdicao" 
-      :reserva="reservaEmEdicao" 
+      :reserva="reservaEmEdicao"
+      :tamanhoLote="tamanhoLoteEdicao"
       @fechar="reservaEmEdicao = null" 
       @salvar="salvarEdicao"
     />
@@ -263,26 +277,76 @@ const verificarConflitoHorario = (h1Inicio, h1Fim, h2Inicio, h2Fim) => {
   return (h1Inicio < h2Fim && h1Fim > h2Inicio)
 }
 
-const salvarEdicao = async (dadosNovos) => {
+const tamanhoLoteEdicao = computed(() => {
+  if (!reservaEmEdicao.value) return 0
+  const ref = reservaEmEdicao.value
+  return reservas.value.filter(r => 
+    r.data === ref.data &&
+    r.horaInicio === ref.horaInicio &&
+    r.horaFim === ref.horaFim &&
+    r.disciplina === ref.disciplina &&
+    r.professor === ref.professor
+  ).length
+})
+
+const salvarEdicao = async (dadosDaEdicao) => {
+  const { aplicarLote, ...dadosNovos } = dadosDaEdicao
   const dataIso = dadosNovos.data
-  const reservasValidas = reservas.value.filter(r => r.id !== dadosNovos.id)
+  
+  // Determina quais reservas serão atualizadas
+  let reservasAlvo = []
+  
+  if (aplicarLote) {
+    const refOriginal = reservaEmEdicao.value
+    reservasAlvo = reservas.value.filter(r => 
+      r.data === refOriginal.data &&
+      r.horaInicio === refOriginal.horaInicio &&
+      r.horaFim === refOriginal.horaFim &&
+      r.disciplina === refOriginal.disciplina &&
+      r.professor === refOriginal.professor
+    )
+  } else {
+    reservasAlvo = [reservas.value.find(r => r.id === dadosNovos.id)]
+  }
 
-  const choqueSala = reservasValidas.find(i => 
-    i.campus === dadosNovos.campus && i.categoria === dadosNovos.categoria && i.recurso === dadosNovos.recurso &&
-    i.data === dataIso && verificarConflitoHorario(dadosNovos.horaInicio, dadosNovos.horaFim, i.horaInicio, i.horaFim)
-  )
+  // Verifica conflitos para todas as reservas alvo simultaneamente
+  for (const reservaAlvo of reservasAlvo) {
+    const outrasReservas = reservas.value.filter(r => r.id !== reservaAlvo.id)
+    const choque = outrasReservas.find(i => 
+      i.campus === reservaAlvo.campus && 
+      i.categoria === reservaAlvo.categoria && 
+      i.recurso === reservaAlvo.recurso &&
+      i.data === dataIso && 
+      verificarConflitoHorario(dadosNovos.horaInicio, dadosNovos.horaFim, i.horaInicio, i.horaFim)
+    )
 
-  if (choqueSala) {
-    Swal.fire('Conflito!', `O horário [${dadosNovos.horaInicio}-${dadosNovos.horaFim}] já está ocupado nesta sala por: ${choqueSala.disciplina}`, 'error')
-    return
+    if (choque) {
+      Swal.fire('Conflito!', `O novo horário [${dadosNovos.horaInicio}-${dadosNovos.horaFim}] já está ocupado na sala ${reservaAlvo.recurso} por: ${choque.disciplina}. Nenhuma edição foi salva.`, 'error')
+      return
+    }
   }
 
   try {
-    await atualizarReserva(dadosNovos.id, dadosNovos)
+    const promessas = reservasAlvo.map(r => {
+      const novaReserva = {
+        ...r, // mantém id, recurso, campus, categoria, etc originais da sala
+        disciplina: dadosNovos.disciplina,
+        professor: dadosNovos.professor,
+        curso: dadosNovos.curso,
+        horaInicio: dadosNovos.horaInicio,
+        horaFim: dadosNovos.horaFim,
+        observacao: dadosNovos.observacao
+      }
+      return atualizarReserva(novaReserva.id, novaReserva)
+    })
+    
+    await Promise.all(promessas)
+    
+    Swal.fire('Sucesso', aplicarLote ? `${promessas.length} reservas atualizadas com sucesso.` : 'Reserva atualizada com sucesso.', 'success')
     reservaEmEdicao.value = null
-    gerarRelatorio()
+    recalcularTabela()
   } catch(e) {
-    Swal.fire('Erro', 'Falha ao salvar a edição.', 'error')
+    Swal.fire('Erro', 'Falha ao salvar a(s) edição(ões).', 'error')
   }
 }
 
@@ -320,6 +384,7 @@ onMounted(async () => {
 })
 
 const temDados = ref(false)
+const carregando = ref(false)
 const mensagemVazio = ref("Escolha o Campus, Espaço e Modo de Busca para gerar o relatório.")
 const colunasFixas = ref([])
 const linhasTabela = ref([])
@@ -431,10 +496,6 @@ const statusTexto = (status) => {
   return status === 'usado' ? 'Utilizado' : status === 'noshow' ? 'Não Usou' : 'Reservado'
 }
 
-const statusClass = (status) => {
-  return status === 'usado' ? 'status-usado' : status === 'noshow' ? 'status-noshow' : 'status-pendente'
-}
-
 const statusBgColor = (status) => {
   if (status === 'usado') return '#10b981'
   if (status === 'noshow') return '#ef4444'
@@ -472,10 +533,7 @@ const alternarModoFiltroData = () => {
   gerarRelatorio()
 }
 
-const gerarRelatorio = async () => {
-  await carregarReservas()
-  await carregarRecursosExtras()
-
+const recalcularTabela = () => {
   if (!filtros.campus || !filtros.categoria || !filtros.modoData) {
     temDados.value = false
     mensagemVazio.value = "Escolha o Campus, Espaço e Modo de Busca para gerar o relatório."
@@ -548,25 +606,33 @@ const gerarRelatorio = async () => {
   }
 }
 
-const mudarStatus = async (id, novoStatus) => {
-  await atualizarStatus(id, novoStatus)
-  gerarRelatorio()
+const gerarRelatorio = async () => {
+  carregando.value = true
+  await carregarReservas(configuracaoGlobal.minDate, configuracaoGlobal.maxDate)
+  await carregarRecursosExtras()
+  recalcularTabela()
+  carregando.value = false
+}
+
+const mudarStatus = async (id, status) => {
+  await atualizarStatus(id, status)
+  recalcularTabela() // UI Otimista
 }
 
 const remover = async (id) => {
   const result = await Swal.fire({
-    title: 'Confirmar exclusão?',
-    text: "Você não poderá reverter isso!",
+    title: 'Cancelar Reserva?',
+    text: "Você não poderá reverter esta ação!",
     icon: 'warning',
     showCancelButton: true,
     confirmButtonColor: '#d33',
     cancelButtonColor: '#3085d6',
-    confirmButtonText: 'Sim, deletar!'
+    confirmButtonText: 'Sim, cancelar!'
   })
   
   if (result.isConfirmed) {
     await deletarReserva(id)
-    gerarRelatorio()
+    recalcularTabela() // UI Otimista
   }
 }
 
@@ -784,5 +850,10 @@ const exportarPDF = () => {
   backdrop-filter: var(--card-blur);
   max-height: 90vh;
   overflow-y: auto;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
 }
 </style>

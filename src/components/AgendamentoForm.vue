@@ -5,7 +5,7 @@
       <p class="text-muted">Configure os parâmetros abaixo para reservar um ambiente no sistema.</p>
     </div>
     
-    <form @submit.prevent="processarAgendamento" class="form-layout">
+    <form @submit.prevent="processarAgendamento" class="form-layout" :class="{ 'form-submitted': formSubmitted }">
       <!-- Coluna Principal -->
       <div class="form-main">
         
@@ -251,7 +251,7 @@
           </div>
 
           <div style="margin-top: 24px;">
-            <button type="submit" class="btn-submit" style="width: 100%;">
+            <button type="submit" class="btn-submit" style="width: 100%;" @click="formSubmitted = true">
               Processar Reserva
             </button>
           </div>
@@ -352,6 +352,12 @@
             </div>
           </div>
 
+          <div style="grid-column: 1 / -1; margin-top: 16px;">
+            <label style="font-weight: bold; display: block; margin-bottom: 8px;">Feriados e Recessos</label>
+            <p style="font-size: 11px; color: var(--text-muted); margin-bottom: 8px;">Digite as datas no formato AAAA-MM-DD (ex: 2026-04-21, 2026-05-01), separadas por vírgula. O sistema pulará automaticamente esses dias ao agendar lotes.</p>
+            <textarea v-model="formConfigSemestre.feriados" rows="3" placeholder="2026-04-21, 2026-05-01" style="width: 100%; padding: 10px; border: 1px solid var(--border-color); border-radius: 6px; font-family: inherit; resize: vertical; box-sizing: border-box;"></textarea>
+          </div>
+
           <div style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 24px;">
             <button type="button" @click="modalConfigSemestre = false" class="btn-cancel" style="width: auto; margin: 0;">Cancelar</button>
             <button type="button" @click="salvarConfigSemestre" class="btn-submit" style="width: auto; margin: 0;">Salvar Datas</button>
@@ -373,20 +379,22 @@ const { reservas, carregarReservas, adicionarReservas, recursosExtras, carregarR
 
 const mesAtual = new Date().getMonth()
 const semestreAtivo = ref(mesAtual > 5 ? '2' : '1')
+const formSubmitted = ref(false)
 
-const configuracaoSemestreId = ref('')
+const configuracaoSemestreId = ref(null)
 const configsSemestre = reactive({
   sem1Inicio: '2026-02-23',
   sem1Fim: '2026-06-26',
   sem2Inicio: '2026-08-10',
-  sem2Fim: '2026-12-18'
+  sem2Fim: '2026-12-18',
+  feriados: ''
 })
 
 const minDate = computed(() => semestreAtivo.value === '1' ? configsSemestre.sem1Inicio : configsSemestre.sem2Inicio)
 const maxDate = computed(() => semestreAtivo.value === '1' ? configsSemestre.sem1Fim : configsSemestre.sem2Fim)
 
-const minDateBr = computed(() => minDate.value.split('-').reverse().join('/'))
-const maxDateBr = computed(() => maxDate.value.split('-').reverse().join('/'))
+const minDateBr = computed(() => minDate.value ? minDate.value.split('-').reverse().join('/') : '')
+const maxDateBr = computed(() => maxDate.value ? maxDate.value.split('-').reverse().join('/') : '')
 
 const validarDatasSemestre = () => {
   if (form.dataInicio) {
@@ -414,13 +422,14 @@ const validarInputManual = () => {
 }
 
 const modalConfigSemestre = ref(false)
-const formConfigSemestre = reactive({ sem1Inicio: '', sem1Fim: '', sem2Inicio: '', sem2Fim: '' })
+const formConfigSemestre = reactive({ sem1Inicio: '', sem1Fim: '', sem2Inicio: '', sem2Fim: '', feriados: '' })
 
 const abrirModalConfig = () => {
   formConfigSemestre.sem1Inicio = configsSemestre.sem1Inicio
   formConfigSemestre.sem1Fim = configsSemestre.sem1Fim
   formConfigSemestre.sem2Inicio = configsSemestre.sem2Inicio
   formConfigSemestre.sem2Fim = configsSemestre.sem2Fim
+  formConfigSemestre.feriados = configsSemestre.feriados
   modalConfigSemestre.value = true
 }
 
@@ -435,9 +444,10 @@ const salvarConfigSemestre = async () => {
     configsSemestre.sem1Fim = formConfigSemestre.sem1Fim
     configsSemestre.sem2Inicio = formConfigSemestre.sem2Inicio
     configsSemestre.sem2Fim = formConfigSemestre.sem2Fim
+    configsSemestre.feriados = formConfigSemestre.feriados
     
     modalConfigSemestre.value = false
-    Swal.fire('Sucesso', 'Datas do período letivo atualizadas com sucesso!', 'success')
+    Swal.fire('Sucesso', 'Configurações de período letivo atualizadas com sucesso!', 'success')
   } catch(e) {
     Swal.fire('Erro', 'Falha ao salvar novas datas', 'error')
   }
@@ -690,6 +700,7 @@ onMounted(async () => {
       configsSemestre.sem1Fim = parsed.sem1Fim || configsSemestre.sem1Fim
       configsSemestre.sem2Inicio = parsed.sem2Inicio || configsSemestre.sem2Inicio
       configsSemestre.sem2Fim = parsed.sem2Fim || configsSemestre.sem2Fim
+      configsSemestre.feriados = parsed.feriados !== undefined ? parsed.feriados : configsSemestre.feriados
     } catch(e) { console.error('Erro ao ler config_semestre') }
   } else {
     adicionarRecursoExtra('Geral', 'configuracao_semestre', JSON.stringify(configsSemestre)).then(() => {
@@ -746,6 +757,8 @@ const verificarConflitoHorario = (h1Inicio, h1Fim, h2Inicio, h2Fim) => {
 }
 
 const processarAgendamento = async () => {
+  formSubmitted.value = true
+  
   if (modalCadastro.value.aberto) {
     Swal.fire('Atenção', "Por favor, conclua o cadastro ou feche o modal antes de processar a reserva.", 'warning')
     return
@@ -778,11 +791,9 @@ const processarAgendamento = async () => {
   let conflitos = []
   let novasReservas = []
   
-  // Feriados variam por semestre e devem se adaptar ao ano configurado
-  const anoFeriados = configsSemestre.sem1Inicio ? configsSemestre.sem1Inicio.substring(0, 4) : new Date().getFullYear()
-  const feriados = semestreAtivo.value === '1' 
-    ? [`${anoFeriados}-04-03`, `${anoFeriados}-04-21`, `${anoFeriados}-05-01`, `${anoFeriados}-06-04`]
-    : [`${anoFeriados}-09-07`, `${anoFeriados}-10-12`, `${anoFeriados}-11-02`, `${anoFeriados}-11-15`]
+  // Lê os feriados configurados e limpa espaços vazios
+  const feriadosStr = configsSemestre.feriados || ''
+  const feriados = feriadosStr.split(',').map(f => f.trim()).filter(f => f.length === 10)
 
   while (dataAtual <= dataFimLimit) {
     const dataIso = dataAtual.toISOString().split('T')[0]
@@ -850,6 +861,7 @@ const processarAgendamento = async () => {
     }
 
     // Reset form maintaining campus/categoria for convenience
+    formSubmitted.value = false
     form.recursos = []
     form.dataInicio = ''
     form.dataFim = ''
@@ -898,6 +910,13 @@ const processarAgendamento = async () => {
   .form-layout {
     grid-template-columns: 1fr;
   }
+}
+
+.form-submitted input:invalid,
+.form-submitted select:invalid,
+.form-submitted textarea:invalid {
+  border-color: #ef4444 !important;
+  background-color: #fef2f2 !important;
 }
 
 .section-card {

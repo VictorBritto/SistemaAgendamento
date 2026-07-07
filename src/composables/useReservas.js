@@ -55,9 +55,13 @@ export function useReservas() {
     }
   }
 
-  const carregarReservas = async () => {
+  const carregarReservas = async (minDate, maxDate) => {
     try {
-      const { data, error } = await supabase.from('reservas').select('*')
+      let query = supabase.from('reservas').select('*')
+      if (minDate) query = query.gte('dataIso', minDate)
+      if (maxDate) query = query.lte('dataIso', maxDate)
+      
+      const { data, error } = await query
       if (error) throw error
       // Mapeia dataIso do banco para data no frontend
       reservas.value = (data || []).map(r => ({ ...r, data: r.dataIso }))

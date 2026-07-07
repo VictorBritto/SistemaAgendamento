@@ -39,6 +39,16 @@
         <textarea v-model="form.observacao" rows="2"></textarea>
       </div>
 
+      <div v-if="tamanhoLote > 1" style="margin-top: 16px; padding: 12px; background: var(--input-bg); border: 1px solid var(--border-color); border-radius: 6px;">
+        <label style="display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: bold; cursor: pointer; margin: 0; color: var(--primary-color);">
+          <input type="checkbox" v-model="form.aplicarLote" style="width: auto; margin: 0; transform: scale(1.1);">
+          Aplicar edição para as {{ tamanhoLote }} salas deste lote?
+        </label>
+        <p style="margin: 4px 0 0 20px; font-size: 11px; color: var(--text-muted);">
+          Altera disciplina, professor, curso e horários para todas as reservas feitas juntas no mesmo horário original.
+        </p>
+      </div>
+
       <div style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 24px;">
         <button type="button" @click="$emit('fechar')" class="btn-cancel" style="width: auto; margin: 0; padding: 10px 16px;">Cancelar</button>
         <button type="button" @click="salvar" class="btn-submit" style="width: auto; margin: 0; padding: 10px 24px;">Salvar Alterações</button>
@@ -55,6 +65,10 @@ const props = defineProps({
   reserva: {
     type: Object,
     default: null
+  },
+  tamanhoLote: {
+    type: Number,
+    default: 1
   }
 })
 
@@ -66,7 +80,8 @@ const form = reactive({
   curso: '',
   horaInicio: '',
   horaFim: '',
-  observacao: ''
+  observacao: '',
+  aplicarLote: false
 })
 
 watch(() => props.reserva, (newVal) => {
@@ -77,6 +92,7 @@ watch(() => props.reserva, (newVal) => {
     form.horaInicio = newVal.horaInicio
     form.horaFim = newVal.horaFim
     form.observacao = newVal.observacao || ''
+    form.aplicarLote = props.tamanhoLote > 1
   }
 }, { immediate: true })
 
