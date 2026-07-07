@@ -45,7 +45,7 @@
               <div v-if="!recursosDisponiveis.length" style="padding: 12px; background: var(--input-bg); border: 1px solid var(--border-color); border-radius: 6px; color: var(--text-muted); font-size: 13px;">
                 -- Escolha o Campus e Categoria primeiro --
               </div>
-              <div v-else class="checkbox-group" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 8px; background: var(--input-bg); padding: 12px; border: 1px solid var(--border-color); border-radius: 6px; max-height: 250px; overflow-y: auto; overflow-x: hidden;">
+              <div v-else class="checkbox-group" style="display: flex; flex-direction: column; gap: 8px; background: var(--input-bg); padding: 12px; border: 1px solid var(--border-color); border-radius: 6px; max-height: 250px; overflow-y: auto; overflow-x: hidden;">
                 <div v-for="rec in recursosDisponiveis" :key="rec" style="display: flex; justify-content: space-between; align-items: center; gap: 8px; border: 1px solid var(--border-color); border-radius: 4px; padding: 6px 10px; background: var(--card-bg); min-width: 0;">
                   <label class="checkbox-label" style="margin: 0; width: 100%; font-size: 12px; display: flex; align-items: flex-start; gap: 6px; cursor: pointer; min-width: 0;">
                     <input type="checkbox" :value="rec" v-model="form.recursos" style="margin-top: 2px; flex-shrink: 0;"> 
@@ -720,7 +720,9 @@ const renderizarCamposRecursoDinamico = () => {
     lista = ["Camera"]
   }
 
-  recursosDisponiveis.value = [...lista, ...extras]
+  const finalLista = [...lista, ...extras]
+  finalLista.sort((a, b) => a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' }))
+  recursosDisponiveis.value = finalLista
 }
 
 const alternarTipoAgendamento = () => {
