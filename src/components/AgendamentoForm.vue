@@ -707,13 +707,7 @@ const renderizarCamposRecursoDinamico = () => {
   
   let lista = []
   
-  if (form.categoria === 'metodologias') {
-    lista = [
-      "SL 01 - AZUL ESCURO", "SL 02 - AMARELA", "SL 03 - AZUL CLARO", "SL 04 - LARANJA",
-      "SL 05 - ROXA", "SL 06 - VERDE", "SL 07 - AZUL ESCURO", "SL 08 - AMARELA",
-      "SL 09 - AZUL CLARO", "SL 10 - LARANJA", "SL 11 - ROXA", "SL 12 - VERDE"
-    ]
-  } else if (form.categoria === 'notebooks') {
+  if (form.categoria === 'notebooks') {
     lista = ["Notebook 1", "Notebook 2"]
   } else if (form.categoria === 'videoconf') {
     lista = ["Camera"]

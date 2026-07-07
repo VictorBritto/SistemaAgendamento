@@ -456,15 +456,9 @@ const obterListaRecursosDisponiveis = (campus, categoria) => {
     "Araras": ["Bloco A", "Bloco B", "Bloco C"],
     "SBO": ["Bloco 1", "Bloco 2", "Bloco 3"]
   }
-  const labsMetodologiaFixos = [
-    "SL 01 - AZUL ESCURO", "SL 02 - AMARELA", "SL 03 - AZUL CLARO", "SL 04 - LARANJA",
-    "SL 05 - ROXA", "SL 06 - VERDE", "SL 07 - AZUL ESCURO", "SL 08 - AMARELA",
-    "SL 09 - AZUL CLARO", "SL 10 - LARANJA", "SL 11 - ROXA", "SL 12 - VERDE"
-  ]
   let lista = []
   if (!campus || !categoria) return []
   const blocos = blocosConfig[campus]
-  if (categoria === 'metodologias') return labsMetodologiaFixos
   if (categoria === 'informatica') {
     blocos.forEach(b => { lista.push(`${b} - Lab 1`, `${b} - Lab 2`, `${b} - Lab 3`) })
   } else if (categoria === 'salas') {
@@ -473,12 +467,10 @@ const obterListaRecursosDisponiveis = (campus, categoria) => {
     lista = ["Camera"]
   }
 
-  if (categoria === 'informatica' || categoria === 'salas') {
-    const extras = recursosExtras.value
-      .filter(r => r.campus === campus && r.categoria === categoria)
-      .map(r => r.nome)
-    lista.push(...extras)
-  }
+  const extras = recursosExtras.value
+    .filter(r => r.campus === campus && r.categoria === categoria)
+    .map(r => r.nome)
+  lista.push(...extras)
 
   return lista
 }
