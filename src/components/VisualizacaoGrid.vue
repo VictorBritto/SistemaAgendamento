@@ -29,6 +29,7 @@
           <label for="filtroCampus">Campus</label>
           <select id="filtroCampus" v-model="filtros.campus" @change="gerarRelatorio">
             <option value="">-- Selecione --</option>
+            <option value="todos">Todos</option>
             <option value="Araras">Araras</option>
             <option value="SBO">Santa Bárbara d'Oeste (SBO)</option>
           </select>
@@ -37,6 +38,7 @@
           <label for="filtroCategoria">Categoria</label>
             <select id="filtroCategoria" v-model="filtros.categoria" @change="gerarRelatorio">
               <option value="">-- Selecione --</option>
+              <option value="todos">Todos</option>
               <option value="metodologias">Lab. Metodologia</option>
               <option value="informatica">Lab. Informática</option>
               <option value="salas">Salas de Aula</option>
@@ -47,16 +49,17 @@
           <label for="filtroModoData">Modo de Busca</label>
           <select id="filtroModoData" v-model="filtros.modoData" @change="alternarModoFiltroData">
             <option value="">-- Selecione --</option>
+            <option value="todos">Todo o Semestre</option>
             <option value="periodo">Por Período</option>
             <option value="individual">Dia Único</option>
           </select>
         </div>
         
-        <div>
+        <div :style="{ opacity: filtros.modoData === 'todos' ? 0.5 : 1, pointerEvents: filtros.modoData === 'todos' ? 'none' : 'auto' }">
           <label for="filtroDataInicio">Data Inicial / Única</label>
           <input type="date" id="filtroDataInicio" v-model="filtros.dataInicio" :min="configuracaoGlobal.minDate" :max="configuracaoGlobal.maxDate" @change="gerarRelatorio">
         </div>
-        <div :style="{ opacity: filtros.modoData === 'individual' ? 0.5 : 1, pointerEvents: filtros.modoData === 'individual' ? 'none' : 'auto' }">
+        <div :style="{ opacity: (filtros.modoData === 'individual' || filtros.modoData === 'todos') ? 0.5 : 1, pointerEvents: (filtros.modoData === 'individual' || filtros.modoData === 'todos') ? 'none' : 'auto' }">
           <label for="filtroDataFim">Data Final</label>
           <input type="date" id="filtroDataFim" v-model="filtros.dataFim" :min="configuracaoGlobal.minDate" :max="configuracaoGlobal.maxDate" @change="gerarRelatorio">
         </div>
@@ -436,7 +439,7 @@ const coresEstiloMap = {
 }
 
 const getCorFundoFull = (recursoNome) => {
-  if (filtros.categoria === 'metodologias' && recursoNome) {
+  if (recursoNome) {
     const nome = recursoNome.toUpperCase()
     let bg = null
     let cor = '#ffffff'
@@ -458,12 +461,13 @@ const getCorFundoFull = (recursoNome) => {
       }
     }
   }
-  // Fallback para outras categorias
+  // Fallback para outras categorias ou salas que não têm cor específica
+  const estilo = estiloCores.value || coresEstiloMap["metodologias"]
   return { 
-    backgroundColor: estiloCores.value.fundo, 
-    color: estiloCores.value.borda, 
+    backgroundColor: estilo.fundo, 
+    color: estilo.borda, 
     padding: '12px 16px',
-    borderTop: '4px solid ' + estiloCores.value.borda,
+    borderTop: '4px solid ' + estilo.borda,
     fontWeight: 'bold',
     borderBottom: '1px solid var(--border-color)'
   }
@@ -541,12 +545,6 @@ const recalcularTabela = () => {
 
   let dataFimFiltro = filtros.modoData === 'individual' ? filtros.dataInicio : filtros.dataFim
 
-  let colunas = obterListaRecursosDisponiveis(filtros.campus, filtros.categoria)
-  if (filtros.sala) {
-    colunas = colunas.filter(c => c.toLowerCase().includes(filtros.sala.toLowerCase()))
-  }
-  colunasFixas.value = colunas
-
   Object.keys(countCat).forEach(k => countCat[k] = 0)
   Object.keys(countStatus).forEach(k => countStatus[k] = 0)
   
@@ -554,11 +552,18 @@ const recalcularTabela = () => {
   let totalEncontrados = 0
 
   reservas.value.forEach(item => {
-    if (item.campus === filtros.campus) {
+    // Contagem de Estatísticas
+    if (filtros.campus === 'todos' || item.campus === filtros.campus) {
       countCat[item.categoria]++
-      if (item.categoria === filtros.categoria) countStatus[item.status]++
+      if (filtros.categoria === 'todos' || item.categoria === filtros.categoria) countStatus[item.status]++
     }
-    if (item.campus === filtros.campus && item.categoria === filtros.categoria && item.data >= filtros.dataInicio && item.data <= dataFimFiltro) {
+    
+    // Filtro principal da Grid
+    const campusOk = filtros.campus === 'todos' || item.campus === filtros.campus
+    const categoriaOk = filtros.categoria === 'todos' || item.categoria === filtros.categoria
+    const dateOk = filtros.modoData === 'todos' || (item.data >= filtros.dataInicio && item.data <= dataFimFiltro)
+    
+    if (campusOk && categoriaOk && dateOk) {
       if (filtros.sala && (!item.recurso || !item.recurso.toLowerCase().includes(filtros.sala.toLowerCase()))) return
       if (filtros.professor && (!item.professor || !item.professor.toLowerCase().includes(filtros.professor.toLowerCase()))) return
       
