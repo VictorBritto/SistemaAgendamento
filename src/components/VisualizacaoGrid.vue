@@ -272,18 +272,8 @@ const salvarEdicao = async (dadosNovos) => {
     i.data === dataIso && verificarConflitoHorario(dadosNovos.horaInicio, dadosNovos.horaFim, i.horaInicio, i.horaFim)
   )
 
-  const choqueProfessor = reservasValidas.find(i => 
-    i.professor === dadosNovos.professor &&
-    i.data === dataIso && verificarConflitoHorario(dadosNovos.horaInicio, dadosNovos.horaFim, i.horaInicio, i.horaFim)
-  )
-
   if (choqueSala) {
     Swal.fire('Conflito!', `O horário [${dadosNovos.horaInicio}-${dadosNovos.horaFim}] já está ocupado nesta sala por: ${choqueSala.disciplina}`, 'error')
-    return
-  }
-  
-  if (choqueProfessor) {
-    Swal.fire('Conflito!', `O professor selecionado já está alocado neste horário no espaço: ${choqueProfessor.recurso}`, 'error')
     return
   }
 

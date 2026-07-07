@@ -792,15 +792,8 @@ const processarAgendamento = async () => {
         i.data === dataIso && verificarConflitoHorario(form.horaInicio, form.horaFim, i.horaInicio, i.horaFim)
       )
 
-      const choqueProfessor = reservas.value.find(i => 
-        i.professor === form.professor &&
-        i.data === dataIso && verificarConflitoHorario(form.horaInicio, form.horaFim, i.horaInicio, i.horaFim)
-      )
-
       if (choqueSala) {
         conflitos.push(`${dataBr} [${form.horaInicio}-${form.horaFim}] - Choque de Sala`)
-      } else if (choqueProfessor) {
-        conflitos.push(`${dataBr} [${form.horaInicio}-${form.horaFim}] - Prof. ocupado (${choqueProfessor.recurso})`)
       } else {
         novasReservas.push({
           id: 'id_' + Math.random().toString(36).substr(2, 9),
