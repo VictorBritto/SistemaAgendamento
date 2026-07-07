@@ -377,8 +377,8 @@ const getCorFundoFull = (recursoNome) => {
     let bg = null
     let cor = '#ffffff'
     
-    if (nome.includes('AZUL ESCURO')) bg = '#1e3a8a'
-    else if (nome.includes('AZUL CLARO')) bg = '#3b82f6'
+    if (nome.includes('AZUL ESC')) bg = '#1e3a8a'
+    else if (nome.includes('AZUL CLR') || nome.includes('AZUL CLARO')) bg = '#3b82f6'
     else if (nome.includes('AMARELA')) { bg = '#fde047'; cor = '#854d0e' }
     else if (nome.includes('LARANJA')) { bg = '#fed7aa'; cor = '#c2410c' }
     else if (nome.includes('ROXA')) bg = '#a855f7'
@@ -720,8 +720,8 @@ const exportarExcel = async () => {
     let corFundo = null
     let corTexto = 'FF000000' // Preto
     
-    if (recUpper.includes('AZUL ESCURO')) { corFundo = 'FF1E40AF'; corTexto = 'FFFFFFFF' }
-    else if (recUpper.includes('AZUL CLARO')) { corFundo = 'FF7DD3FC' }
+    if (recUpper.includes('AZUL ESC')) { corFundo = 'FF1E40AF'; corTexto = 'FFFFFFFF' }
+    else if (recUpper.includes('AZUL CLR') || recUpper.includes('AZUL CLARO')) { corFundo = 'FF7DD3FC' }
     else if (recUpper.includes('AMARELA')) { corFundo = 'FFFDE047' }
     else if (recUpper.includes('LARANJA')) { corFundo = 'FFF97316'; corTexto = 'FFFFFFFF' }
     else if (recUpper.includes('ROXA')) { corFundo = 'FF9333EA'; corTexto = 'FFFFFFFF' }

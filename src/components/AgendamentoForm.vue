@@ -34,26 +34,33 @@
                 <option value="videoconf">Videoconferência</option>
               </select>
             </div>
-            <div style="grid-column: 1 / -1;">
-              <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 6px; flex-wrap: wrap; gap: 8px;">
-                <label style="margin-bottom: 0;">Recurso Específico</label>
-                <div style="display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end;">
-                  <button v-if="form.recurso && recursosDisponiveis.includes(form.recurso)" type="button" @click="editarRecursoExtra(form.categoria, form.recurso)" class="btn-cadastrar-recurso" style="padding: 4px 10px; font-size: 11px; color: #f59e0b; border-color: #fcd34d;" title="Editar recurso selecionado">
-                    Editar
-                  </button>
-                  <button v-if="form.recurso && recursosDisponiveis.includes(form.recurso)" type="button" @click="apagarRecursoExtra(form.categoria, form.recurso)" class="btn-cadastrar-recurso" style="padding: 4px 10px; font-size: 11px; color: #ef4444; border-color: #fca5a5;" title="Apagar recurso selecionado">
-                    Apagar
-                  </button>
-                  <button type="button" @click="abrirModalCadastro('recurso')" class="btn-cadastrar-recurso" style="padding: 4px 10px; font-size: 11px;">
-                    + Novo Recurso
-                  </button>
+            <div style="grid-column: 1 / -1; min-width: 0;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; gap: 8px;">
+                <label style="margin-bottom: 0; line-height: 1.2;">Recursos Específicos<br><span style="font-size: 10px; font-weight: normal; color: var(--text-muted);">(Múltipla Escolha)</span></label>
+                <button type="button" @click="abrirModalCadastro('recurso')" class="btn-cadastrar-recurso" style="padding: 4px 8px; font-size: 10px; white-space: nowrap; flex-shrink: 0;">
+                  + Novo Recurso
+                </button>
+              </div>
+              
+              <div v-if="!recursosDisponiveis.length" style="padding: 12px; background: var(--input-bg); border: 1px solid var(--border-color); border-radius: 6px; color: var(--text-muted); font-size: 13px;">
+                -- Escolha o Campus e Categoria primeiro --
+              </div>
+              <div v-else class="checkbox-group" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 8px; background: var(--input-bg); padding: 12px; border: 1px solid var(--border-color); border-radius: 6px; max-height: 250px; overflow-y: auto; overflow-x: hidden;">
+                <div v-for="rec in recursosDisponiveis" :key="rec" style="display: flex; justify-content: space-between; align-items: center; gap: 8px; border: 1px solid var(--border-color); border-radius: 4px; padding: 6px 10px; background: var(--card-bg); min-width: 0;">
+                  <label class="checkbox-label" style="margin: 0; width: 100%; font-size: 12px; display: flex; align-items: flex-start; gap: 6px; cursor: pointer; min-width: 0;">
+                    <input type="checkbox" :value="rec" v-model="form.recursos" style="margin-top: 2px; flex-shrink: 0;"> 
+                    <span style="flex-grow: 1; min-width: 0; line-height: 1.3; word-break: break-word;">{{ rec }}</span>
+                  </label>
+                  <div style="display: flex; gap: 8px; flex-shrink: 0; margin-left: 2px;">
+                    <button type="button" @click="editarRecursoExtra(form.categoria, rec)" style="background: none; border: none; color: #f59e0b; cursor: pointer; padding: 2px; display: flex; align-items: center;" title="Editar">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+                    </button>
+                    <button type="button" @click="apagarRecursoExtra(form.categoria, rec)" style="background: none; border: none; color: #ef4444; cursor: pointer; padding: 2px; display: flex; align-items: center;" title="Apagar">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
+                    </button>
+                  </div>
                 </div>
               </div>
-              <select id="recursoSelecionado" v-model="form.recurso" required :disabled="!recursosDisponiveis.length">
-                <option value="" v-if="!recursosDisponiveis.length">-- Escolha o Campus e Categoria primeiro --</option>
-                <option value="" v-else>-- Selecione o Recurso --</option>
-                <option v-for="rec in recursosDisponiveis" :key="rec" :value="rec">{{ rec }}</option>
-              </select>
             </div>
           </div>
         </div>
@@ -230,8 +237,8 @@
               <span>{{ form.campus || '-' }}</span>
             </div>
             <div class="summary-item">
-              <span>Recurso:</span>
-              <span class="truncate">{{ form.recurso || '-' }}</span>
+              <span>Recurso(s):</span>
+              <span class="truncate">{{ form.recursos.length > 0 ? form.recursos.length + ' selecionado(s)' : '-' }}</span>
             </div>
             <div class="summary-item">
               <span>Modelo:</span>
@@ -606,8 +613,8 @@ const editarRecursoExtra = async (categoria, nomeReferencia) => {
       if (categoria === 'preset_horario' && presetSelecionado.value === nomeReferencia) presetSelecionado.value = nomeFinal
       else if (categoria === 'professor' && form.professor === nomeReferencia.split('||')[0]) form.professor = novoNome.trim()
       else if (categoria === 'curso' && form.curso === nomeReferencia) form.curso = nomeFinal
-      else if (form.recurso === nomeReferencia) {
-        form.recurso = nomeFinal
+      else if (form.recursos.includes(nomeReferencia)) {
+        form.recursos = form.recursos.map(r => r === nomeReferencia ? nomeFinal : r)
         renderizarCamposRecursoDinamico()
       }
     } catch (e) {
@@ -647,7 +654,7 @@ const apagarRecursoExtra = async (categoria, nomeReferencia) => {
   else if (categoria === 'professor') form.professor = ''
   else if (categoria === 'curso') form.curso = ''
   else {
-    form.recurso = ''
+    form.recursos = form.recursos.filter(r => r !== nomeReferencia)
     renderizarCamposRecursoDinamico()
   }
 }
@@ -655,8 +662,7 @@ const apagarRecursoExtra = async (categoria, nomeReferencia) => {
 const form = reactive({
   campus: '',
   categoria: '',
-  recurso: '',
-  tipoAgendamento: '',
+  recursos: [],
   dataInicio: '',
   dataFim: '',
   diasSemana: [],
@@ -665,7 +671,8 @@ const form = reactive({
   disciplina: '',
   professor: '',
   curso: '',
-  observacao: ''
+  observacao: '',
+  tipoAgendamento: 'pontual'
 })
 
 const recursosDisponiveis = ref([])
@@ -742,8 +749,8 @@ const processarAgendamento = async () => {
     return
   }
 
-  if (!form.campus || !form.categoria || !form.recurso || !form.tipoAgendamento || !form.dataInicio || !form.dataFim || !form.horaInicio || !form.horaFim || !form.disciplina || !form.professor || !form.curso) {
-    Swal.fire('Atenção', "Por favor, preencha todos os campos e seleções obrigatórias.", 'warning')
+  if (!form.campus || !form.categoria || form.recursos.length === 0 || !form.tipoAgendamento || !form.dataInicio || !form.dataFim || !form.horaInicio || !form.horaFim || !form.disciplina || !form.professor || !form.curso) {
+    Swal.fire('Atenção', "Por favor, preencha todos os campos e selecione pelo menos um recurso.", 'warning')
     return
   }
 
@@ -787,29 +794,31 @@ const processarAgendamento = async () => {
     if (form.tipoAgendamento === 'pontual' || form.diasSemana.includes(dataAtual.getDay().toString())) {
       const dataBr = dataIso.split('-').reverse().join('/')
 
-      const choqueSala = reservas.value.find(i => 
-        i.campus === form.campus && i.categoria === form.categoria && i.recurso === form.recurso &&
-        i.data === dataIso && verificarConflitoHorario(form.horaInicio, form.horaFim, i.horaInicio, i.horaFim)
-      )
+      for (const recursoSelecionado of form.recursos) {
+        const choqueSala = reservas.value.find(i => 
+          i.campus === form.campus && i.categoria === form.categoria && i.recurso === recursoSelecionado &&
+          i.data === dataIso && verificarConflitoHorario(form.horaInicio, form.horaFim, i.horaInicio, i.horaFim)
+        )
 
-      if (choqueSala) {
-        conflitos.push(`${dataBr} [${form.horaInicio}-${form.horaFim}] - Choque de Sala`)
-      } else {
-        novasReservas.push({
-          id: 'id_' + Math.random().toString(36).substr(2, 9),
-          campus: form.campus,
-          categoria: form.categoria,
-          recurso: form.recurso,
-          data: dataIso,
-          horaInicio: form.horaInicio,
-          horaFim: form.horaFim,
-          disciplina: form.disciplina,
-          professor: form.professor,
-          curso: form.curso,
-          observacao: form.observacao,
-          status: 'pendente'
-        })
-        salvos++
+        if (choqueSala) {
+          conflitos.push(`${dataBr} [${form.horaInicio}-${form.horaFim}] - Choque: ${recursoSelecionado}`)
+        } else {
+          novasReservas.push({
+            id: 'id_' + Math.random().toString(36).substr(2, 9),
+            campus: form.campus,
+            categoria: form.categoria,
+            recurso: recursoSelecionado,
+            data: dataIso,
+            horaInicio: form.horaInicio,
+            horaFim: form.horaFim,
+            disciplina: form.disciplina,
+            professor: form.professor,
+            curso: form.curso,
+            observacao: form.observacao,
+            status: 'pendente'
+          })
+          salvos++
+        }
       }
     }
     dataAtual.setDate(dataAtual.getDate() + 1)
@@ -839,7 +848,7 @@ const processarAgendamento = async () => {
     }
 
     // Reset form maintaining campus/categoria for convenience
-    form.recurso = ''
+    form.recursos = []
     form.dataInicio = ''
     form.dataFim = ''
     form.diasSemana = []
