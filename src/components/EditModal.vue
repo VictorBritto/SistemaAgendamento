@@ -42,10 +42,10 @@
       <div v-if="tamanhoLote > 1" style="margin-top: 16px; padding: 12px; background: var(--input-bg); border: 1px solid var(--border-color); border-radius: 6px;">
         <label style="display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: bold; cursor: pointer; margin: 0; color: var(--primary-color);">
           <input type="checkbox" v-model="form.aplicarLote" style="width: auto; margin: 0; transform: scale(1.1);">
-          Aplicar edição para as {{ tamanhoLote }} salas deste lote?
+          Aplicar edição para todas as {{ tamanhoLote }} ocorrências (dias/salas) deste lote?
         </label>
         <p style="margin: 4px 0 0 20px; font-size: 11px; color: var(--text-muted);">
-          Altera disciplina, professor, curso e horários para todas as reservas feitas juntas no mesmo horário original.
+          Altera os dados e o horário para todas as reservas no histórico que possuem exatamente a mesma disciplina, professor e horário originais desta sala.
         </p>
       </div>
 

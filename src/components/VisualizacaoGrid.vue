@@ -281,7 +281,6 @@ const tamanhoLoteEdicao = computed(() => {
   if (!reservaEmEdicao.value) return 0
   const ref = reservaEmEdicao.value
   return reservas.value.filter(r => 
-    r.data === ref.data &&
     r.horaInicio === ref.horaInicio &&
     r.horaFim === ref.horaFim &&
     r.disciplina === ref.disciplina &&
@@ -299,7 +298,6 @@ const salvarEdicao = async (dadosDaEdicao) => {
   if (aplicarLote) {
     const refOriginal = reservaEmEdicao.value
     reservasAlvo = reservas.value.filter(r => 
-      r.data === refOriginal.data &&
       r.horaInicio === refOriginal.horaInicio &&
       r.horaFim === refOriginal.horaFim &&
       r.disciplina === refOriginal.disciplina &&
@@ -316,12 +314,13 @@ const salvarEdicao = async (dadosDaEdicao) => {
       i.campus === reservaAlvo.campus && 
       i.categoria === reservaAlvo.categoria && 
       i.recurso === reservaAlvo.recurso &&
-      i.data === dataIso && 
+      i.data === reservaAlvo.data && 
       verificarConflitoHorario(dadosNovos.horaInicio, dadosNovos.horaFim, i.horaInicio, i.horaFim)
     )
 
     if (choque) {
-      Swal.fire('Conflito!', `O novo horário [${dadosNovos.horaInicio}-${dadosNovos.horaFim}] já está ocupado na sala ${reservaAlvo.recurso} por: ${choque.disciplina}. Nenhuma edição foi salva.`, 'error')
+      const dataBr = reservaAlvo.data.split('-').reverse().join('/')
+      Swal.fire('Conflito!', `O novo horário [${dadosNovos.horaInicio}-${dadosNovos.horaFim}] já está ocupado na sala ${reservaAlvo.recurso} do dia ${dataBr} por: ${choque.disciplina}. Nenhuma edição foi salva.`, 'error')
       return
     }
   }
