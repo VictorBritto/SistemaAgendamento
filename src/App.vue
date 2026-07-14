@@ -5,9 +5,11 @@ import Navbar from './components/Navbar.vue'
 import AgendamentoForm from './components/AgendamentoForm.vue'
 import VisualizacaoGrid from './components/VisualizacaoGrid.vue'
 import Login from './components/Login.vue'
+import SplashScreen from './components/SplashScreen.vue'
 
 const { user } = useAuth()
 const abaAtiva = ref('cadastro')
+const showSplash = ref(true)
 
 // Garantir que não caia em uma aba inválida ao logar
 watch(user, (newVal) => {
@@ -29,7 +31,11 @@ onMounted(() => {
 
 <template>
   <div>
-    <!-- Aplicativo restrito -->
+    <!-- Tela de Apresentação (Splash Screen) -->
+    <SplashScreen v-if="showSplash" @complete="showSplash = false" />
+    
+    <div v-else>
+      <!-- Aplicativo restrito -->
     <template v-if="user">
       <Navbar v-model:abaAtiva="abaAtiva" />
       
@@ -54,6 +60,7 @@ onMounted(() => {
         </div>
       </div>
     </template>
+    </div>
   </div>
 </template>
 
