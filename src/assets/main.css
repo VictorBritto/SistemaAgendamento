@@ -326,7 +326,7 @@ button {
 .event-card .room-name { font-weight: 700; font-size: 15px; color: var(--text-color); max-width: 60%; word-break: break-word; letter-spacing: -0.02em;}
 .event-card .time-badge { background: var(--time-badge-bg); color: var(--time-badge-text); padding: 6px 12px; border-radius: 8px; font-size: 13px; font-weight: 700; width: fit-content; border: 1px solid var(--time-badge-border); letter-spacing: 0.05em; margin-bottom: 12px;}
 .event-card .details { font-size: 15px; line-height: 1.6; color: var(--text-color); flex-grow: 1;}
-.event-card .prof { font-size: 14px; color: var(--text-muted); margin-top: 6px; display: flex; align-items: center; }
+.event-card .prof .curso { font-size: 14px; color: var(--text-muted); margin-top: 6px; display: flex; align-items: center; }
 
 .event-card .actions { margin-top: auto; display: flex; flex-direction: column; gap: 8px; padding-top: 16px; border-top: 1px solid var(--border-color); opacity: 0.8; transition: opacity 0.3s; }
 .event-card:hover .actions { opacity: 1; }
