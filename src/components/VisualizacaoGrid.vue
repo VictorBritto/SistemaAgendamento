@@ -322,25 +322,33 @@ const salvarEdicao = async (dadosDaEdicao) => {
   // Verifica conflitos para todas as reservas alvo simultaneamente
   for (const reservaAlvo of reservasAlvo) {
     const outrasReservas = reservas.value.filter(r => r.id !== reservaAlvo.id)
+    const novaData = aplicarLote ? reservaAlvo.dataIso : dadosNovos.data
+    const novoRecurso = dadosNovos.recurso || reservaAlvo.recurso
+
     const choque = outrasReservas.find(i => 
       i.campus === reservaAlvo.campus && 
       i.categoria === reservaAlvo.categoria && 
-      i.recurso === reservaAlvo.recurso &&
-      i.data === reservaAlvo.data && 
+      i.recurso === novoRecurso &&
+      i.dataIso === novaData && 
       verificarConflitoHorario(dadosNovos.horaInicio, dadosNovos.horaFim, i.horaInicio, i.horaFim)
     )
 
     if (choque) {
-      const dataBr = reservaAlvo.data.split('-').reverse().join('/')
-      Swal.fire('Conflito!', `O novo horário [${dadosNovos.horaInicio}-${dadosNovos.horaFim}] já está ocupado na sala ${reservaAlvo.recurso} do dia ${dataBr} por: ${choque.disciplina}. Nenhuma edição foi salva.`, 'error')
+      const dataBr = novaData.split('-').reverse().join('/')
+      Swal.fire('Conflito!', `O novo horário [${dadosNovos.horaInicio}-${dadosNovos.horaFim}] já está ocupado na sala ${novoRecurso} do dia ${dataBr} por: ${choque.disciplina}. Nenhuma edição foi salva.`, 'error')
       return
     }
   }
 
   try {
     const promessas = reservasAlvo.map(r => {
+      const novaData = aplicarLote ? r.dataIso : dadosNovos.data
+      const novoRecurso = dadosNovos.recurso || r.recurso
       const novaReserva = {
-        ...r, // mantém id, recurso, campus, categoria, etc originais da sala
+        ...r,
+        recurso: novoRecurso,
+        data: novaData,
+        dataIso: novaData,
         disciplina: dadosNovos.disciplina,
         professor: dadosNovos.professor,
         curso: dadosNovos.curso,

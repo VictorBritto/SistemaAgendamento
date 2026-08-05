@@ -162,6 +162,8 @@ export function useReservas() {
   const atualizarReserva = async (id, dadosAtualizados) => {
     try {
       const { error } = await supabase.from('reservas').update({
+        recurso: dadosAtualizados.recurso,
+        dataIso: dadosAtualizados.dataIso,
         disciplina: dadosAtualizados.disciplina,
         professor: dadosAtualizados.professor,
         curso: dadosAtualizados.curso,

@@ -3,9 +3,15 @@
     <div class="modal-content">
       <h3 style="margin-top: 0; color: var(--primary-color);">Editar Agendamento</h3>
       
-      <div class="alert-info" style="padding: 12px; margin-bottom: 16px; font-size: 13px; text-align: left; background: var(--pill-bg); border: 1px solid var(--border-color); border-radius: 8px;">
-        <strong>Laboratório:</strong> {{ reserva.recurso }} <br>
-        <strong>Data:</strong> {{ reserva.data.split('-').reverse().join('/') }}
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px;">
+        <div class="input-group">
+          <label>Laboratório / Recurso</label>
+          <input type="text" v-model="form.recurso" required>
+        </div>
+        <div class="input-group">
+          <label>Data</label>
+          <input type="date" v-model="form.data" required>
+        </div>
       </div>
 
       <div class="input-group">
@@ -75,6 +81,8 @@ const props = defineProps({
 const emit = defineEmits(['fechar', 'salvar'])
 
 const form = reactive({
+  recurso: '',
+  data: '',
   disciplina: '',
   professor: '',
   curso: '',
@@ -86,6 +94,8 @@ const form = reactive({
 
 watch(() => props.reserva, (newVal) => {
   if (newVal) {
+    form.recurso = newVal.recurso || ''
+    form.data = newVal.data || ''
     form.disciplina = newVal.disciplina
     form.professor = newVal.professor
     form.curso = newVal.curso
@@ -97,7 +107,7 @@ watch(() => props.reserva, (newVal) => {
 }, { immediate: true })
 
 const salvar = () => {
-  if (!form.disciplina || !form.professor || !form.horaInicio || !form.horaFim) {
+  if (!form.recurso || !form.data || !form.disciplina || !form.professor || !form.horaInicio || !form.horaFim) {
     Swal.fire('Atenção', 'Preencha todos os campos obrigatórios.', 'warning')
     return
   }
