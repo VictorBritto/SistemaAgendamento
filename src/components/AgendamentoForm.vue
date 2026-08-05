@@ -62,6 +62,54 @@
                 </div>
               </div>
             </div>
+          </div><!-- /input-grid -->
+
+          <!-- Legenda de Categorias -->
+          <div style="margin-top: 20px; padding: 14px; background: var(--input-bg); border: 1px solid var(--border-color); border-radius: 8px;">
+            <span style="display: block; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-muted); margin-bottom: 10px;">Tipos de Espaço</span>
+            <div style="display: flex; flex-direction: column; gap: 7px;">
+              <div style="display: flex; align-items: center; gap: 8px; font-size: 12px;">
+                <span style="width: 10px; height: 10px; border-radius: 50%; background: #1e3a8a; flex-shrink: 0;"></span>
+                <span style="color: var(--text-color);">Lab. Metodologia</span>
+                <span style="margin-left: auto; font-size: 11px; color: var(--text-muted);">Salas Ativas</span>
+              </div>
+              <div style="display: flex; align-items: center; gap: 8px; font-size: 12px;">
+                <span style="width: 10px; height: 10px; border-radius: 50%; background: #0d9488; flex-shrink: 0;"></span>
+                <span style="color: var(--text-color);">Lab. Informática</span>
+                <span style="margin-left: auto; font-size: 11px; color: var(--text-muted);">Máquinas / PCs</span>
+              </div>
+              <div style="display: flex; align-items: center; gap: 8px; font-size: 12px;">
+                <span style="width: 10px; height: 10px; border-radius: 50%; background: #7c3aed; flex-shrink: 0;"></span>
+                <span style="color: var(--text-color);">Salas de Aula</span>
+                <span style="margin-left: auto; font-size: 11px; color: var(--text-muted);">Padrão</span>
+              </div>
+              <div style="display: flex; align-items: center; gap: 8px; font-size: 12px;">
+                <span style="width: 10px; height: 10px; border-radius: 50%; background: #e11d48; flex-shrink: 0;"></span>
+                <span style="color: var(--text-color);">Videoconferência</span>
+                <span style="margin-left: auto; font-size: 11px; color: var(--text-muted);">Camera / Link</span>
+              </div>
+            </div>
+          </div>
+          <!-- Status de Preenchimento -->
+          <div class="card-status-bar">
+            <span class="status-bar-title">Status da seção</span>
+            <div class="status-bar-items">
+              <div class="status-bar-item" :class="form.campus ? 'done' : 'pending'">
+                <svg v-if="form.campus" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                <svg v-else width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                Campus
+              </div>
+              <div class="status-bar-item" :class="form.categoria ? 'done' : 'pending'">
+                <svg v-if="form.categoria" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                <svg v-else width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                Categoria
+              </div>
+              <div class="status-bar-item" :class="form.recursos.length > 0 ? 'done' : 'pending'">
+                <svg v-if="form.recursos.length > 0" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                <svg v-else width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                {{ form.recursos.length > 0 ? form.recursos.length + ' recurso(s)' : 'Recurso' }}
+              </div>
+            </div>
           </div>
         </div>
 
@@ -221,7 +269,28 @@
             </div>
             <div style="grid-column: 1 / -1;">
               <label for="observacao">Observação Adicional (Opcional)</label>
-              <textarea id="observacao" v-model="form.observacao" placeholder="Ex: Preciso de adaptador HDMI, microfone, etc..." rows="2" style="width: 100%; padding: 12px; border: 1px solid var(--border-color); border-radius: var(--radius-md); font-family: inherit; resize: vertical; box-sizing: border-box;"></textarea>
+              <textarea id="observacao" v-model="form.observacao" placeholder="Ex: Preciso de adaptador HDMI, microfone, etc...&#10;&#10;Use este campo para informar qualquer necessidade especial, configuração do ambiente ou observação relevante para quem for preparar o espaço." rows="6" style="width: 100%; padding: 12px; border: 1px solid var(--border-color); border-radius: var(--radius-md); font-family: inherit; resize: vertical; box-sizing: border-box;"></textarea>
+            </div>
+          </div><!-- /input-grid -->
+          <!-- Status de Preenchimento -->
+          <div class="card-status-bar">
+            <span class="status-bar-title">Status da seção</span>
+            <div class="status-bar-items">
+              <div class="status-bar-item" :class="form.disciplina ? 'done' : 'pending'">
+                <svg v-if="form.disciplina" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                <svg v-else width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                Disciplina
+              </div>
+              <div class="status-bar-item" :class="form.professor ? 'done' : 'pending'">
+                <svg v-if="form.professor" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                <svg v-else width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                Professor
+              </div>
+              <div class="status-bar-item" :class="form.curso ? 'done' : 'pending'">
+                <svg v-if="form.curso" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                <svg v-else width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                Curso
+              </div>
             </div>
           </div>
         </div>
@@ -1040,12 +1109,12 @@ const processarAgendamento = async () => {
   align-items: start;
 }
 
-/* Colocar os cards de seção lado a lado, mas sem esticar a altura */
+/* Colocar os cards de seção lado a lado na mesma altura */
 .form-main {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr));
   gap: 24px;
-  align-items: start;
+  align-items: stretch;
 }
 
 @media (max-width: 1200px) {
@@ -1183,5 +1252,56 @@ const processarAgendamento = async () => {
 }
 .input-group input, .input-group select {
   width: 100%;
+}
+
+/* ---- Status de Preenchimento (rodapé dos cards) ---- */
+.card-status-bar {
+  margin-top: auto;
+  padding-top: 20px;
+  border-top: 1px dashed var(--border-color);
+}
+
+.status-bar-title {
+  display: block;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+  margin-bottom: 10px;
+}
+
+.status-bar-items {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.status-bar-item {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 5px 10px;
+  border-radius: 20px;
+  transition: all 0.2s;
+}
+
+.status-bar-item.done {
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.status-bar-item.pending {
+  background: var(--input-bg);
+  color: var(--text-muted);
+  border: 1px solid var(--border-color);
+}
+
+/* Dark mode */
+:root[data-theme="dark"] .status-bar-item.done {
+  background: rgba(21, 128, 61, 0.2);
+  color: #4ade80;
 }
 </style>
