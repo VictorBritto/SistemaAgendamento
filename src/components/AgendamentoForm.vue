@@ -775,7 +775,6 @@ onMounted(async () => {
 })
 
 const renderizarCamposRecursoDinamico = () => {
-  form.recurso = ''
   if (!form.campus || !form.categoria) {
     recursosDisponiveis.value = []
     return

@@ -186,6 +186,70 @@
         </div>
       </div>
     </div>
+
+    <!-- CALENDÁRIO VISUAL -->
+    <div v-if="temDados" class="card" style="margin-top: 24px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 12px;">
+        <div>
+          <h3 style="margin: 0; margin-bottom: 4px;">Calendário de Ocupação</h3>
+          <p class="text-muted" style="margin: 0; font-size: 13px;">Datas coloridas = ocupadas. Branco = vaga disponível. Clique em um dia para ver os detalhes.</p>
+        </div>
+        <div style="display: flex; gap: 12px; flex-wrap: wrap; align-items: center; font-size: 12px;">
+          <span style="display: flex; align-items: center; gap: 6px;"><span style="width:14px;height:14px;border-radius:3px;background:#4f46e5;display:inline-block;"></span> Ocupado</span>
+          <span style="display: flex; align-items: center; gap: 6px;"><span style="width:14px;height:14px;border-radius:3px;background:#ef4444;display:inline-block;"></span> Feriado</span>
+          <span style="display: flex; align-items: center; gap: 6px;"><span style="width:14px;height:14px;border-radius:3px;border:1px solid var(--border-color);background:var(--card-bg);display:inline-block;"></span> Vaga</span>
+        </div>
+      </div>
+
+      <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 24px;">
+        <div v-for="mesCalendario in mesesCalendario" :key="mesCalendario.chave" class="cal-month-block">
+          <div style="text-align: center; font-weight: 700; font-size: 15px; color: var(--primary-color); margin-bottom: 10px; padding-bottom: 8px; border-bottom: 2px solid var(--primary-color);">
+            {{ mesCalendario.nomeCompleto }}
+          </div>
+          <div style="display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px;">
+            <div v-for="d in ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb']" :key="d" style="text-align: center; font-size: 10px; font-weight: 700; color: var(--text-muted); padding: 4px 0;">{{ d }}</div>
+            <!-- Espaços em branco antes do primeiro dia -->
+            <div v-for="n in mesCalendario.primeiroDia" :key="'empty-'+n"></div>
+            <!-- Dias do mês -->
+            <div
+              v-for="dia in mesCalendario.dias"
+              :key="dia.iso"
+              class="cal-day"
+              :class="{ 'cal-day-occupied': dia.reservas.length > 0, 'cal-day-today': dia.iso === hoje, 'cal-day-selected': calDiaSelecionado === dia.iso }"
+              :style="dia.reservas.length > 0 ? { background: dia.corPrincipal, color: dia.corTexto, cursor: 'pointer' } : {}"
+              @click="dia.reservas.length > 0 ? selecionarDiaCalendario(dia) : null"
+              :title="dia.reservas.length > 0 ? dia.reservas.length + ' reserva(s)' : 'Sem reservas'"
+            >
+              <span class="cal-day-num">{{ dia.numero }}</span>
+              <span v-if="dia.reservas.length > 0" class="cal-day-count">{{ dia.reservas.length }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Painel de detalhes do dia clicado -->
+      <div v-if="calDiaSelecionado && calDetalhesDia" style="margin-top: 24px; border-top: 2px solid var(--border-color); padding-top: 20px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+          <h4 style="margin: 0; color: var(--primary-color);">📅 {{ calDetalhesDia.dataBr }} — {{ calDetalhesDia.diaSemana }}</h4>
+          <button type="button" @click="calDiaSelecionado = null" style="background: none; border: none; cursor: pointer; color: var(--text-muted); font-size: 18px;">✕</button>
+        </div>
+        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px;">
+          <div v-for="(reservasDoRecurso, nomeRecurso) in calDetalhesDia.recursos" :key="nomeRecurso"
+            style="border: 1px solid var(--border-color); border-radius: 8px; overflow: hidden;">
+            <div :style="getCorFundoFull(nomeRecurso)" style="padding: 10px 14px;">
+              <strong>{{ nomeRecurso }}</strong>
+            </div>
+            <div style="padding: 12px; display: flex; flex-direction: column; gap: 8px;">
+              <div v-for="res in reservasDoRecurso" :key="res.id" style="font-size: 13px; padding: 8px; background: var(--input-bg); border-radius: 6px; border-left: 3px solid var(--primary-color);">
+                <div style="font-weight: 600;">{{ res.horaInicio }} – {{ res.horaFim }}</div>
+                <div>{{ res.disciplina }}</div>
+                <div style="color: var(--text-muted); font-size: 12px; margin-top: 4px;">👨‍🏫 {{ res.professor }} &nbsp;|&nbsp; {{ res.curso }}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
     
     <EditModal 
       v-if="reservaEmEdicao" 
@@ -401,7 +465,6 @@ onMounted(async () => {
 const temDados = ref(false)
 const carregando = ref(false)
 const mensagemVazio = ref("Escolha o Campus, Espaço e Modo de Busca para gerar o relatório.")
-const colunasFixas = ref([])
 const linhasTabela = ref([])
 const diaSelecionado = ref(null)
 
@@ -411,6 +474,124 @@ const countStatus = reactive({ usado: 0, noshow: 0, pendente: 0 })
 const mesAbreviado = (mesNum) => {
   const meses = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
   return meses[parseInt(mesNum, 10) - 1] || '';
+}
+
+const hoje = new Date().toISOString().split('T')[0]
+
+// =============================================
+// CALENDÁRIO VISUAL
+// =============================================
+const calDiaSelecionado = ref(null)
+
+const coresPorRecurso = [
+  { bg: '#4f46e5', text: '#ffffff' }, // indigo
+  { bg: '#0d9488', text: '#ffffff' }, // teal
+  { bg: '#dc2626', text: '#ffffff' }, // red
+  { bg: '#d97706', text: '#ffffff' }, // amber
+  { bg: '#7c3aed', text: '#ffffff' }, // violet
+  { bg: '#059669', text: '#ffffff' }, // emerald
+  { bg: '#db2777', text: '#ffffff' }, // pink
+  { bg: '#2563eb', text: '#ffffff' }, // blue
+  { bg: '#9333ea', text: '#ffffff' }, // purple
+  { bg: '#0891b2', text: '#ffffff' }, // cyan
+  { bg: '#65a30d', text: '#ffffff' }, // lime
+  { bg: '#c2410c', text: '#ffffff' }, // orange
+]
+
+const mapaCoresRecurso = ref({})
+
+const atribuirCoresAosRecursos = () => {
+  const mapa = {}
+  let idx = 0
+  linhasTabela.value.forEach(linha => {
+    Object.keys(linha.recursos).forEach(recurso => {
+      if (!mapa[recurso]) {
+        mapa[recurso] = coresPorRecurso[idx % coresPorRecurso.length]
+        idx++
+      }
+    })
+  })
+  mapaCoresRecurso.value = mapa
+}
+
+watch(linhasTabela, () => { atribuirCoresAosRecursos() }, { deep: true })
+
+const mesesCalendario = computed(() => {
+  if (!linhasTabela.value.length) return []
+  
+  // Monta mapa de data -> reservas
+  const mapaReservasPorData = {}
+  linhasTabela.value.forEach(linha => {
+    mapaReservasPorData[linha.dataIso] = {
+      recursos: linha.recursos,
+      dataBr: linha.dataBr,
+      diaSemana: linha.diaSemana
+    }
+  })
+  
+  // Determina o intervalo de meses
+  const dataInicio = filtros.modoData === 'todos' ? configuracaoGlobal.minDate : filtros.dataInicio
+  const dataFim = filtros.modoData === 'todos' ? configuracaoGlobal.maxDate : (filtros.modoData === 'individual' ? filtros.dataInicio : filtros.dataFim)
+  
+  if (!dataInicio || !dataFim) return []
+  
+  const inicio = new Date(dataInicio + 'T12:00:00')
+  const fim = new Date(dataFim + 'T12:00:00')
+  
+  const nomeMesesCompleto = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro']
+  const resultado = []
+  
+  let cur = new Date(inicio.getFullYear(), inicio.getMonth(), 1)
+  const limFim = new Date(fim.getFullYear(), fim.getMonth(), 1)
+  
+  while (cur <= limFim) {
+    const ano = cur.getFullYear()
+    const mes = cur.getMonth() // 0-based
+    const totalDias = new Date(ano, mes + 1, 0).getDate()
+    const primeiroDia = new Date(ano, mes, 1).getDay() // 0=Dom
+    const chave = `${ano}-${String(mes + 1).padStart(2, '0')}`
+    
+    const dias = []
+    for (let d = 1; d <= totalDias; d++) {
+      const iso = `${ano}-${String(mes + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`
+      const dadosDia = mapaReservasPorData[iso]
+      let corPrincipal = 'transparent'
+      let corTexto = 'inherit'
+      let reservasList = []
+      
+      if (dadosDia) {
+        reservasList = Object.values(dadosDia.recursos).flat()
+        // Usa a cor do primeiro recurso
+        const primeiroRecurso = Object.keys(dadosDia.recursos)[0]
+        const cor = mapaCoresRecurso.value[primeiroRecurso]
+        if (cor) { corPrincipal = cor.bg; corTexto = cor.text }
+        else { corPrincipal = '#4f46e5'; corTexto = '#ffffff' }
+      }
+      
+      dias.push({
+        numero: d,
+        iso,
+        reservas: reservasList,
+        corPrincipal,
+        corTexto
+      })
+    }
+    
+    resultado.push({ chave, nomeCompleto: `${nomeMesesCompleto[mes]} ${ano}`, primeiroDia, dias })
+    cur = new Date(ano, mes + 1, 1)
+  }
+  
+  return resultado
+})
+
+const calDetalhesDia = computed(() => {
+  if (!calDiaSelecionado.value) return null
+  const linha = linhasTabela.value.find(l => l.dataIso === calDiaSelecionado.value)
+  return linha || null
+})
+
+const selecionarDiaCalendario = (dia) => {
+  calDiaSelecionado.value = calDiaSelecionado.value === dia.iso ? null : dia.iso
 }
 
 const mesFiltroSelecionado = ref(null)
@@ -872,5 +1053,75 @@ const exportarPDF = () => {
 @keyframes pulse {
   0%, 100% { opacity: 1; }
   50% { opacity: 0.4; }
+}
+
+/* ========================================
+   CALENDÁRIO VISUAL
+   ======================================== */
+.cal-month-block {
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 16px;
+}
+
+.cal-day {
+  position: relative;
+  aspect-ratio: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  border: 1px solid transparent;
+  transition: all 0.15s ease;
+  user-select: none;
+  min-height: 34px;
+}
+
+.cal-day:not(.cal-day-occupied) {
+  color: var(--text-color);
+  background: var(--input-bg);
+  border-color: var(--border-color);
+}
+
+.cal-day-occupied {
+  box-shadow: 0 2px 4px rgba(0,0,0,0.15);
+  transform: scale(1.02);
+}
+
+.cal-day-occupied:hover {
+  transform: scale(1.1);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+  z-index: 2;
+}
+
+.cal-day-today {
+  outline: 2px solid #f59e0b;
+  outline-offset: 1px;
+}
+
+.cal-day-selected {
+  outline: 2px solid #f59e0b;
+  outline-offset: 2px;
+  box-shadow: 0 0 0 4px rgba(245, 158, 11, 0.25);
+}
+
+.cal-day-num {
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1;
+}
+
+.cal-day-count {
+  font-size: 9px;
+  font-weight: 700;
+  margin-top: 1px;
+  opacity: 0.85;
+  background: rgba(0,0,0,0.15);
+  border-radius: 4px;
+  padding: 1px 3px;
 }
 </style>
