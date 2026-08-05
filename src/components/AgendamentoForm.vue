@@ -185,11 +185,11 @@
                 </div>
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
                   <div>
-                    <label :for="'dateInicio' + index" style="font-size: 10px; margin-bottom: 4px;">Data Inicial</label>
+                    <label :for="'dateInicio' + index" style="font-size: 10px; margin-bottom: 4px;">Data Inicio</label>
                     <input type="date" :id="'dateInicio' + index" v-model="periodo.dataInicio" :min="minDate" :max="maxDate" @change="() => { replicarDataPontual(index); validarInputManual(index) }" required style="padding: 8px 10px; font-size: 12px;">
                   </div>
                   <div :style="{ opacity: form.tipoAgendamento === 'pontual' || !form.tipoAgendamento ? 0.5 : 1 }">
-                    <label :for="'dateFim' + index" style="font-size: 10px; margin-bottom: 4px;">Data Final</label>
+                    <label :for="'dateFim' + index" style="font-size: 10px; margin-bottom: 4px;">Data Fim</label>
                     <input type="date" :id="'dateFim' + index" v-model="periodo.dataFim" :min="minDate" :max="maxDate" :disabled="form.tipoAgendamento === 'pontual' || !form.tipoAgendamento" @change="() => validarInputManual(index)" required style="padding: 8px 10px; font-size: 12px;">
                   </div>
                 </div>
@@ -235,25 +235,31 @@
               <label for="disciplina">Disciplina ou Evento</label>
               <input type="text" id="disciplina" v-model="form.disciplina" placeholder="Ex: Arquitetura de Software" required>
             </div>
-            <div>
-              <label for="professor">Professor Responsável</label>
-              
+            <div style="grid-column: 1 / -1; display: flex; flex-direction: column; gap: 16px;">
               <div>
-                <select id="professor" v-model="form.professor" @change="aoSelecionarProfessor" required>
-                  <option value="">-- Selecione o Professor --</option>
-                  <option v-for="prof in professoresDisponiveis" :key="prof.nome" :value="prof.nome">{{ prof.nome }}</option>
-                </select>
-                <div style="margin-top: 6px; display: flex; justify-content: flex-end; gap: 8px; flex-wrap: wrap;">
-                  <button v-if="form.professor" type="button" @click="editarRecursoExtra('professor', professoresDisponiveisObj.find(p => p.nome === form.professor)?.originalNome)" class="btn-cadastrar-recurso" style="padding: 4px 10px; font-size: 11px; color: #f59e0b; border-color: #fcd34d;">
-                    Editar Prof.
-                  </button>
-                  <button v-if="form.professor" type="button" @click="apagarRecursoExtra('professor', professoresDisponiveisObj.find(p => p.nome === form.professor)?.originalNome)" class="btn-cadastrar-recurso" style="padding: 4px 10px; font-size: 11px; color: #ef4444; border-color: #fca5a5;">
-                    Apagar Prof.
-                  </button>
-                  <button type="button" @click="abrirModalCadastro('professor')" class="btn-cadastrar-recurso" style="padding: 4px 10px; font-size: 11px;">
-                    + Cadastrar Novo
-                  </button>
+                <label for="professor">Professor Responsável</label>
+                <div>
+                  <select id="professor" v-model="form.professor" @change="aoSelecionarProfessor" required>
+                    <option value="">-- Selecione o Professor --</option>
+                    <option v-for="prof in professoresDisponiveis" :key="prof.nome" :value="prof.nome">{{ prof.nome }}</option>
+                  </select>
+                  <div style="margin-top: 6px; display: flex; justify-content: flex-end; gap: 8px; flex-wrap: wrap;">
+                    <button v-if="form.professor" type="button" @click="editarRecursoExtra('professor', professoresDisponiveisObj.find(p => p.nome === form.professor)?.originalNome)" class="btn-cadastrar-recurso" style="padding: 4px 10px; font-size: 11px; color: #f59e0b; border-color: #fcd34d;">
+                      Editar Prof.
+                    </button>
+                    <button v-if="form.professor" type="button" @click="apagarRecursoExtra('professor', professoresDisponiveisObj.find(p => p.nome === form.professor)?.originalNome)" class="btn-cadastrar-recurso" style="padding: 4px 10px; font-size: 11px; color: #ef4444; border-color: #fca5a5;">
+                      Apagar Prof.
+                    </button>
+                    <button type="button" @click="abrirModalCadastro('professor')" class="btn-cadastrar-recurso" style="padding: 4px 10px; font-size: 11px;">
+                      + Cadastrar Novo
+                    </button>
+                  </div>
                 </div>
+              </div>
+
+              <div>
+                <label for="emailProfessor">E-mail do Professor</label>
+                <input type="email" id="emailProfessor" v-model="form.emailProfessor" placeholder="professor@fho.edu.br">
               </div>
             </div>
             
@@ -509,6 +515,7 @@ import { reactive, ref, computed, onMounted } from 'vue'
 import Swal from 'sweetalert2'
 import { useReservas } from '../composables/useReservas'
 import { useAuth } from '../composables/useAuth'
+import emailjs from '@emailjs/browser'
 
 // Modal de importação
 const modalImportacaoTextoAberta = ref(false)
@@ -545,6 +552,12 @@ const processarImportacao = async () => {
         console.error("Erro ao auto-cadastrar professor:", e)
       }
     }
+  }
+
+  // Extrair Email
+  const emailMatch = texto.match(/Email:\s*([^\s]+)/i)
+  if (emailMatch) {
+    form.emailProfessor = emailMatch[1].trim()
   }
 
   // Extrair Curso
@@ -980,6 +993,7 @@ const form = reactive({
   disciplina: '',
   professor: '',
   curso: '',
+  emailProfessor: '',
   observacao: '',
   tipoAgendamento: 'pontual'
 })
@@ -1238,6 +1252,65 @@ const processarAgendamento = async () => {
       await adicionarReservas(novasReservas)
     }
 
+    const dispararEmail = async () => {
+      const formOriginal = formsParaProcessar[0]
+      if (!formOriginal.emailProfessor) return
+
+      try {
+        Swal.fire({
+          title: 'Enviando E-mail...',
+          text: `Notificando ${formOriginal.emailProfessor}`,
+          allowOutsideClick: false,
+          didOpen: () => {
+            Swal.showLoading()
+          }
+        })
+        
+        let msgCorpo = `Gostaríamos de confirmar que as solicitações de agendamento para a disciplina "${formOriginal.disciplina}" foram processadas com sucesso no sistema.\n\n`
+        msgCorpo += `Detalhes da Solicitação:\n`
+        msgCorpo += `- Curso: ${formOriginal.curso}\n`
+        if (formOriginal.observacao) {
+          msgCorpo += `- Observação: ${formOriginal.observacao}\n`
+        }
+        msgCorpo += `\nForam aprovadas e lançadas ${salvos} novas reservas no sistema.\n`
+        if (conflitos.length > 0) {
+          msgCorpo += `\nAtenção: algumas das datas solicitadas sofreram choque de horário com outras turmas e não puderam ser reservadas.\n`
+        }
+        msgCorpo += `\nAtenciosamente,\nCoordenação.`
+
+        const templateParams = {
+          to_email: formOriginal.emailProfessor,
+          to_name: formOriginal.professor,
+          subject: `Confirmação de Agendamento - ${formOriginal.disciplina}`,
+          message: msgCorpo
+        }
+
+        // Substitua 'YOUR_SERVICE_ID', 'YOUR_TEMPLATE_ID', 'YOUR_PUBLIC_KEY' pelas suas chaves
+        await emailjs.send(
+          'Agendamento',
+          'SistemaAgendamentos',
+          templateParams,
+          '0U2_PC73g93wtLvjG'
+        )
+
+        Swal.fire({
+          title: 'E-mail Enviado!',
+          text: 'O professor foi notificado com sucesso de forma automática.',
+          icon: 'success',
+          timer: 2500,
+          showConfirmButton: false
+        })
+
+      } catch (error) {
+        console.error("Erro no EmailJS:", error)
+        Swal.fire({
+          title: 'Falha no Envio',
+          text: `Os agendamentos foram salvos, mas não foi possível disparar o e-mail.\n\nDetalhes do Erro:\n${error.text || error.message || error}`,
+          icon: 'warning'
+        })
+      }
+    }
+
     if (conflitos.length > 0) {
       Swal.fire({
         title: `${salvos} reservas confirmadas`,
@@ -1246,9 +1319,9 @@ const processarAgendamento = async () => {
                  ${conflitos.join('<br/>')}
                </div>`,
         icon: 'warning'
-      })
+      }).then(() => { if (salvos > 0) dispararEmail() })
     } else {
-      Swal.fire('Sucesso!', `${salvos} reserva(s) salva(s).`, 'success')
+      Swal.fire('Sucesso!', `${salvos} reserva(s) salva(s).`, 'success').then(() => { if (salvos > 0) dispararEmail() })
     }
 
     formSubmitted.value = false
@@ -1261,6 +1334,7 @@ const processarAgendamento = async () => {
     form.horaFim = ''
     form.disciplina = ''
     form.professor = ''
+    form.emailProfessor = ''
     form.curso = ''
   } catch (error) {
     console.error("ERRO SUPABASE:", error)

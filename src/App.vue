@@ -4,6 +4,7 @@ import { useAuth } from './composables/useAuth'
 import Navbar from './components/Navbar.vue'
 import AgendamentoForm from './components/AgendamentoForm.vue'
 import VisualizacaoGrid from './components/VisualizacaoGrid.vue'
+import CalendarioMensal from './components/CalendarioMensal.vue'
 import Login from './components/Login.vue'
 import SplashScreen from './components/SplashScreen.vue'
 
@@ -46,6 +47,10 @@ onMounted(() => {
 
         <div v-show="abaAtiva === 'visualizacao'" class="page-panel active">
           <VisualizacaoGrid />
+        </div>
+
+        <div v-show="abaAtiva === 'calendario'" class="page-panel active">
+          <CalendarioMensal />
         </div>
       </div>
     </template>
