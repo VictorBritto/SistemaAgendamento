@@ -1,8 +1,14 @@
 <template>
   <div class="agendamento-container">
-    <div class="platform-header">
-      <h2>Painel de Agendamento</h2>
-      <p class="text-muted">Configure os parâmetros abaixo para reservar um ambiente no sistema.</p>
+    <div class="platform-header" style="display: flex; justify-content: space-between; align-items: center;">
+      <div>
+        <h2>Painel de Agendamento</h2>
+        <p class="text-muted">Configure os parâmetros abaixo para reservar um ambiente no sistema.</p>
+      </div>
+      <button @click="modalImportacaoTextoAberta = true" class="btn-cadastrar-recurso" style="display: flex; align-items: center; gap: 8px; padding: 10px 16px; font-size: 14px;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+        Importar Solicitação
+      </button>
     </div>
     
     <form @submit.prevent="processarAgendamento" class="form-layout" :class="{ 'form-submitted': formSubmitted }">
@@ -169,22 +175,27 @@
               </select>
             </div>
 
-            <div v-for="(periodo, index) in form.periodos" :key="index" style="margin-bottom: 12px; border: 1px solid var(--border-color); padding: 12px; border-radius: 6px;">
-              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                <span style="font-weight: bold; font-size: 13px;">Período {{ index + 1 }}</span>
-                <button v-if="form.periodos.length > 1" type="button" @click="removerPeriodo(index)" style="background: none; border: none; color: #ef4444; cursor: pointer; font-size: 14px;">🗑️</button>
-              </div>
-              <div style="grid-column: 1 / -1; display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 130px), 1fr)); gap: 16px;">
-                <div>
-                  <label :for="'dateInicio' + index">Data Inicial</label>
-                  <input type="date" :id="'dateInicio' + index" v-model="periodo.dataInicio" :min="minDate" :max="maxDate" @change="() => { replicarDataPontual(index); validarInputManual(index) }" required>
+            <div class="periodos-scroll-container">
+              <div v-for="(periodo, index) in form.periodos" :key="index" style="border: 1px solid var(--border-color); padding: 12px; border-radius: 6px; background: var(--card-bg);">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                  <span style="font-weight: bold; font-size: 13px; white-space: nowrap; color: var(--text-color);">Período {{ index + 1 }}</span>
+                  <button v-if="form.periodos.length > 1" type="button" @click="removerPeriodo(index)" style="background: transparent; border: none; padding: 4px; display: flex; align-items: center; justify-content: center; cursor: pointer; border-radius: 4px; flex-shrink: 0;" title="Remover" onmouseover="this.style.background='rgba(239, 68, 68, 0.1)'" onmouseout="this.style.background='transparent'">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                  </button>
                 </div>
-                <div :style="{ opacity: form.tipoAgendamento === 'pontual' || !form.tipoAgendamento ? 0.5 : 1 }">
-                  <label :for="'dateFim' + index">Data Final</label>
-                  <input type="date" :id="'dateFim' + index" v-model="periodo.dataFim" :min="minDate" :max="maxDate" :disabled="form.tipoAgendamento === 'pontual' || !form.tipoAgendamento" @change="() => validarInputManual(index)" required>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                  <div>
+                    <label :for="'dateInicio' + index" style="font-size: 10px; margin-bottom: 4px;">Data Inicial</label>
+                    <input type="date" :id="'dateInicio' + index" v-model="periodo.dataInicio" :min="minDate" :max="maxDate" @change="() => { replicarDataPontual(index); validarInputManual(index) }" required style="padding: 8px 10px; font-size: 12px;">
+                  </div>
+                  <div :style="{ opacity: form.tipoAgendamento === 'pontual' || !form.tipoAgendamento ? 0.5 : 1 }">
+                    <label :for="'dateFim' + index" style="font-size: 10px; margin-bottom: 4px;">Data Final</label>
+                    <input type="date" :id="'dateFim' + index" v-model="periodo.dataFim" :min="minDate" :max="maxDate" :disabled="form.tipoAgendamento === 'pontual' || !form.tipoAgendamento" @change="() => validarInputManual(index)" required style="padding: 8px 10px; font-size: 12px;">
+                  </div>
                 </div>
               </div>
             </div>
+            
             <button type="button" @click="adicionarPeriodo" style="margin-bottom: 16px; background: var(--input-bg); border: 1px dashed var(--border-color); color: var(--text-color); padding: 8px; width: 100%; cursor: pointer; border-radius: 6px;">+ Adicionar Data Inicial e Final</button>
 
             <div v-show="form.tipoAgendamento === 'periodo'" style="grid-column: 1 / -1;">
@@ -474,6 +485,21 @@
           </div>
         </div>
       </div>
+      <!-- Modal de Importação de Texto -->
+      <div class="modal-overlay" v-if="modalImportacaoTextoAberta" style="z-index: 2000;">
+        <div class="modal-content" style="max-width: 600px;">
+          <h3 style="margin-top: 0; margin-bottom: 16px; color: var(--primary-color);">Importar Dados de Agendamento</h3>
+          <p class="text-muted" style="margin-bottom: 16px; font-size: 13px;">Cole abaixo o texto recebido (ex: e-mail) para preencher o formulário automaticamente.</p>
+          <div class="input-group">
+            <textarea v-model="textoImportacao" rows="12" placeholder="Cole o texto aqui..." style="width: 100%; padding: 12px; border: 1px solid var(--border-color); border-radius: 8px; font-family: monospace; font-size: 12px; resize: vertical; box-sizing: border-box;"></textarea>
+          </div>
+          <div style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 16px;">
+            <button type="button" @click="fecharModalImportacao" class="btn-cancel" style="width: auto; margin: 0;">Cancelar</button>
+            <button type="button" @click="processarImportacao" class="btn-submit" style="width: auto; margin: 0; background: var(--primary-color);">Processar Texto</button>
+          </div>
+        </div>
+      </div>
+
     </form>
   </div>
 </template>
@@ -483,6 +509,160 @@ import { reactive, ref, computed, onMounted } from 'vue'
 import Swal from 'sweetalert2'
 import { useReservas } from '../composables/useReservas'
 import { useAuth } from '../composables/useAuth'
+
+// Modal de importação
+const modalImportacaoTextoAberta = ref(false)
+const textoImportacao = ref('')
+
+const fecharModalImportacao = () => {
+  modalImportacaoTextoAberta.value = false
+  textoImportacao.value = ''
+}
+
+const processarImportacao = async () => {
+  if (!textoImportacao.value) return
+  
+  const texto = textoImportacao.value
+  
+  // Extrair Solicitante (Professor)
+  const solicitanteMatch = texto.match(/Solicitante:\s*(.+)/i)
+  if (solicitanteMatch) {
+    const profNomeCompleto = solicitanteMatch[1].trim()
+    // Tenta extrair só o nome se houver " - " (ex: P3723 - Carlos Miranda)
+    const partes = profNomeCompleto.split('-')
+    const profNome = partes.length > 1 ? partes[partes.length - 1].trim() : profNomeCompleto
+    
+    // Tenta encontrar o professor na lista, se não, adiciona
+    const profExistente = professoresDisponiveis.value.find(p => p.nome.toLowerCase() === profNome.toLowerCase())
+    if (profExistente) {
+      form.professor = profExistente.nome
+    } else {
+      // Se não tiver, cadastra no banco
+      try {
+        await adicionarRecursoExtra('Geral', 'professor', profNome)
+        form.professor = profNome
+      } catch (e) {
+        console.error("Erro ao auto-cadastrar professor:", e)
+      }
+    }
+  }
+
+  // Extrair Curso
+  const cursoMatch = texto.match(/Curso:\s*(.+)/i)
+  if (cursoMatch) {
+    const cursoNome = cursoMatch[1].trim()
+    const cursoExistente = cursosDisponiveis.value.find(c => c.toLowerCase() === cursoNome.toLowerCase())
+    if (cursoExistente) {
+      form.curso = cursoExistente
+    } else {
+      // Se não tiver, cadastra no banco
+      try {
+        await adicionarRecursoExtra('Geral', 'curso', cursoNome)
+        form.curso = cursoNome
+      } catch (e) {
+        console.error("Erro ao auto-cadastrar curso:", e)
+      }
+    }
+  }
+
+  // Extrair Disciplina
+  const disciplinaMatch = texto.match(/Disciplina:\s*(.+)/i)
+  if (disciplinaMatch) {
+    form.disciplina = disciplinaMatch[1].trim()
+  }
+
+  // Extrair Recurso (tentar achar Campus e Categoria)
+  const recursoMatch = texto.match(/Recurso:\s*(.+)/i)
+  let textoRecursoOriginal = ""
+  if (recursoMatch) {
+    textoRecursoOriginal = recursoMatch[1].trim()
+    const recursoUpper = textoRecursoOriginal.toUpperCase()
+    
+    if (recursoUpper.includes('ARS') || recursoUpper.includes('ARARAS')) {
+      form.campus = 'Araras'
+    } else if (recursoUpper.includes('SBO')) {
+      form.campus = 'SBO'
+    }
+
+    if (recursoUpper.includes('MTD ATIVA') || recursoUpper.includes('METODOLOGIA')) {
+      form.categoria = 'metodologias'
+    } else if (recursoUpper.includes('INF') || recursoUpper.includes('LABORATÓRIO') || recursoUpper.includes('COMPUT')) {
+      form.categoria = 'informatica'
+    } else if (recursoUpper.includes('SALA')) {
+      form.categoria = 'salas'
+    }
+    renderizarCamposRecursoDinamico()
+
+    // Tenta achar número da sala no texto inteiro para marcar o checkbox
+    const salaMatch = texto.match(/(?:sala|lab|laborat[óo]rio)\s*([a-z0-9]+)/i)
+    if (salaMatch) {
+      const salaNum = salaMatch[1].toLowerCase()
+      const rec = recursosDisponiveis.value.find(r => r.toLowerCase().includes(salaNum))
+      if (rec) {
+        form.recursos = [rec]
+      }
+    }
+  }
+
+  // Extrair Observação e anexar Dados Disciplina
+  let observacaoFinal = ""
+  const dadosDiscMatch = texto.match(/Dados Disciplina:\s*(.+)/i)
+  if (dadosDiscMatch) {
+    observacaoFinal += "Dados Disciplina: " + dadosDiscMatch[1].trim() + "\n\n"
+  }
+  if (textoRecursoOriginal) {
+    observacaoFinal += "Recurso Solicitado Original: " + textoRecursoOriginal + "\n\n"
+  }
+  
+  const obsMatch = texto.match(/\*\s*Observação\s*\*\n([\s\S]*?)(?=\*|$)/i)
+  if (obsMatch) {
+    observacaoFinal += obsMatch[1].trim()
+  }
+  form.observacao = observacaoFinal.trim()
+
+  // Extrair Agendamentos (Dias e Horários)
+  const regexAgendamentos = /Dia:\s*(\d{2}\/\d{2}\/\d{4})\s*Início:\s*(\d{2}:\d{2})\s*Término:\s*(\d{2}:\d{2})/gi
+  let matches
+  const diasEncontrados = []
+  let horaInicioExtraida = ""
+  let horaFimExtraida = ""
+
+  while ((matches = regexAgendamentos.exec(texto)) !== null) {
+    const diaBr = matches[1] // DD/MM/YYYY
+    const partesDia = diaBr.split('/')
+    const diaIso = `${partesDia[2]}-${partesDia[1]}-${partesDia[0]}` // YYYY-MM-DD
+    
+    diasEncontrados.push(diaIso)
+
+    // Pega a primeira hora que achar
+    if (!horaInicioExtraida) horaInicioExtraida = matches[2]
+    if (!horaFimExtraida) horaFimExtraida = matches[3]
+  }
+
+  if (diasEncontrados.length > 0) {
+    form.tipoAgendamento = 'pontual'
+    form.periodos = diasEncontrados.map(dia => ({ dataInicio: dia, dataFim: dia }))
+    if (horaInicioExtraida) form.horaInicio = horaInicioExtraida
+    if (horaFimExtraida) form.horaFim = horaFimExtraida
+
+    // Auto-ajustar o semestre ativo para evitar que a data fique fora do limite
+    const primeiraData = diasEncontrados[0]
+    if (primeiraData >= configsSemestre.sem2Inicio && primeiraData <= configsSemestre.sem2Fim) {
+      semestreAtivo.value = '2'
+    } else if (primeiraData >= configsSemestre.sem1Inicio && primeiraData <= configsSemestre.sem1Fim) {
+      semestreAtivo.value = '1'
+    }
+  }
+
+  fecharModalImportacao()
+  Swal.fire({
+    icon: 'success',
+    title: 'Texto Importado',
+    text: 'Formulário preenchido! Verifique os dados (especialmente o Recurso) antes de salvar.',
+    timer: 2500,
+    showConfirmButton: false
+  })
+}
 
 const { isAdmin } = useAuth()
 const { reservas, carregarReservas, adicionarReservas, recursosExtras, carregarRecursosExtras, adicionarRecursoExtra, deletarRecursoExtra, atualizarRecursoExtra } = useReservas()
@@ -1303,5 +1483,31 @@ const processarAgendamento = async () => {
 :root[data-theme="dark"] .status-bar-item.done {
   background: rgba(21, 128, 61, 0.2);
   color: #4ade80;
+}
+
+/* Scroll Customizado para a Lista de Períodos */
+.periodos-scroll-container {
+  max-height: 380px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-right: 6px;
+  margin-bottom: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.periodos-scroll-container::-webkit-scrollbar {
+  width: 6px;
+}
+.periodos-scroll-container::-webkit-scrollbar-track {
+  background: var(--input-bg);
+  border-radius: 4px;
+}
+.periodos-scroll-container::-webkit-scrollbar-thumb {
+  background: var(--border-color);
+  border-radius: 4px;
+}
+.periodos-scroll-container::-webkit-scrollbar-thumb:hover {
+  background: var(--text-muted);
 }
 </style>
