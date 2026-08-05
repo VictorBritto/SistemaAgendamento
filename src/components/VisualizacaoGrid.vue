@@ -196,6 +196,7 @@
       v-if="reservaEmEdicao" 
       :reserva="reservaEmEdicao"
       :tamanhoLote="tamanhoLoteEdicao"
+      :recursosDisponiveis="obterListaRecursosDisponiveis(reservaEmEdicao.campus, reservaEmEdicao.categoria)"
       @fechar="reservaEmEdicao = null" 
       @salvar="salvarEdicao"
     />

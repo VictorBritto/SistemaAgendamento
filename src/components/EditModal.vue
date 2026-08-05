@@ -6,11 +6,14 @@
       <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px;">
         <div class="input-group">
           <label>Laboratório / Recurso</label>
-          <input type="text" v-model="form.recurso" required>
+          <select v-model="form.recurso" required>
+            <option value="">-- Selecione --</option>
+            <option v-for="r in recursosLivres" :key="r" :value="r">{{ r }}</option>
+          </select>
         </div>
         <div class="input-group">
           <label>Data</label>
-          <input type="date" v-model="form.data" required>
+          <input class="input-date" type="date" v-model="form.data" required>
         </div>
       </div>
 
@@ -64,8 +67,9 @@
 </template>
 
 <script setup>
-import { reactive, watch } from 'vue'
+import { reactive, watch, computed } from 'vue'
 import Swal from 'sweetalert2'
+import { useReservas } from '../composables/useReservas'
 
 const props = defineProps({
   reserva: {
@@ -75,8 +79,14 @@ const props = defineProps({
   tamanhoLote: {
     type: Number,
     default: 1
+  },
+  recursosDisponiveis: {
+    type: Array,
+    default: () => []
   }
 })
+
+const { reservas } = useReservas()
 
 const emit = defineEmits(['fechar', 'salvar'])
 
@@ -105,6 +115,26 @@ watch(() => props.reserva, (newVal) => {
     form.aplicarLote = props.tamanhoLote > 1
   }
 }, { immediate: true })
+
+const verificarConflitoHorario = (h1Inicio, h1Fim, h2Inicio, h2Fim) => {
+  return (h1Inicio < h2Fim && h1Fim > h2Inicio)
+}
+
+const recursosLivres = computed(() => {
+  if (!form.data || !form.horaInicio || !form.horaFim) return props.recursosDisponiveis
+  
+  return props.recursosDisponiveis.filter(recurso => {
+    const conflito = reservas.value.find(r => 
+      r.campus === props.reserva?.campus &&
+      r.categoria === props.reserva?.categoria &&
+      r.recurso === recurso &&
+      r.dataIso === form.data &&
+      r.id !== props.reserva?.id &&
+      verificarConflitoHorario(form.horaInicio, form.horaFim, r.horaInicio, r.horaFim)
+    )
+    return !conflito
+  })
+})
 
 const salvar = () => {
   if (!form.recurso || !form.data || !form.disciplina || !form.professor || !form.horaInicio || !form.horaFim) {
@@ -160,5 +190,8 @@ const salvar = () => {
   box-sizing: border-box;
   background: var(--input-bg);
   color: var(--text-color);
+}
+.input-date {
+  height: 50px;
 }
 </style>
