@@ -257,9 +257,43 @@
             </div>
           </div>
 
+          <div v-if="indexEdicao !== null" style="margin-top: 16px; display: flex; gap: 8px;">
+            <button type="button" style="flex: 1; background: var(--input-bg); color: var(--text-color); border: 1px solid var(--border-color); padding: 10px; border-radius: 6px; cursor: pointer; font-weight: 600;" @click="cancelarEdicao">
+              Cancelar
+            </button>
+            <button type="button" style="flex: 2; background: var(--primary-color); color: white; border: none; padding: 10px; border-radius: 6px; cursor: pointer; font-weight: 600;" @click="salvarEdicao">
+              Salvar Edição
+            </button>
+          </div>
+          <div v-else style="margin-top: 16px;">
+            <button type="button" style="width: 100%; background: var(--input-bg); color: var(--text-color); border: 1px dashed var(--border-color); padding: 10px 16px; border-radius: 6px; cursor: pointer; font-weight: 600;" @click="adicionarAoCarrinho">
+              + Adicionar Reserva
+            </button>
+          </div>
+
+          <div v-if="carrinho.length > 0" style="margin-top: 24px; border-top: 1px solid var(--border-color); padding-top: 16px;">
+            <h4 style="margin-top: 0; margin-bottom: 12px; font-size: 13px; color: var(--text-color);">Agendamentos Aguardando ({{ carrinho.length }})</h4>
+            <div style="display: flex; flex-direction: column; gap: 8px; max-height: 250px; overflow-y: auto;">
+              <div v-for="(item, idx) in carrinho" :key="idx" style="background: var(--input-bg); border: 1px solid var(--border-color); border-radius: 6px; padding: 10px; font-size: 12px; display: flex; justify-content: space-between; align-items: center;">
+                <div style="display: flex; flex-direction: column; gap: 4px;">
+                  <strong style="color: var(--primary-color);">{{ item.recursos.join(', ') }}</strong>
+                  <span style="color: var(--text-muted);">{{ item.horaInicio }} as {{ item.horaFim }}</span>
+                </div>
+                <div style="display: flex; gap: 4px;">
+                  <button type="button" @click="editarDoCarrinho(idx)" style="background: none; border: none; color: #f59e0b; cursor: pointer; padding: 4px;" title="Editar">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+                  </button>
+                  <button type="button" @click="removerDoCarrinho(idx)" style="background: none; border: none; color: #ef4444; cursor: pointer; padding: 4px;" title="Remover">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
           <div style="margin-top: 24px;">
             <button type="submit" class="btn-submit" style="width: 100%;" @click="formSubmitted = true">
-              Processar Reserva
+              Processar {{ itemsParaProcessarCount > 1 ? itemsParaProcessarCount + ' Reservas' : 'Reserva' }}
             </button>
           </div>
         </div>
@@ -387,6 +421,8 @@ const { reservas, carregarReservas, adicionarReservas, recursosExtras, carregarR
 const mesAtual = new Date().getMonth()
 const semestreAtivo = ref(mesAtual > 5 ? '2' : '1')
 const formSubmitted = ref(false)
+const carrinho = ref([])
+const indexEdicao = ref(null)
 
 const configuracaoSemestreId = ref(null)
 const configsSemestre = reactive({
@@ -699,6 +735,18 @@ const form = reactive({
   tipoAgendamento: 'pontual'
 })
 
+const itemsParaProcessarCount = computed(() => {
+  let count = carrinho.value.length
+  if (indexEdicao.value === null && form.campus && form.recursos.length > 0) {
+    const formStr = JSON.stringify(form)
+    const isInCart = carrinho.value.some(item => JSON.stringify(item) === formStr)
+    if (!isInCart) {
+      count++
+    }
+  }
+  return count
+})
+
 const recursosDisponiveis = ref([])
 
 onMounted(async () => {
@@ -758,6 +806,50 @@ const removerPeriodo = (index) => {
   form.periodos.splice(index, 1)
 }
 
+const adicionarAoCarrinho = () => {
+  if (!form.campus || !form.categoria || form.recursos.length === 0 || !form.tipoAgendamento || form.periodos.some(p => !p.dataInicio || !p.dataFim) || !form.horaInicio || !form.horaFim || !form.disciplina || !form.professor || !form.curso) {
+    Swal.fire('Atenção', 'Preencha todos os campos obrigatórios antes de adicionar ao carrinho.', 'warning')
+    return
+  }
+  if (form.tipoAgendamento === 'periodo' && (!form.diasSemana || form.diasSemana.length === 0)) {
+    Swal.fire('Atenção', 'Selecione ao menos um dia da semana para a recorrência.', 'warning')
+    return
+  }
+  if (form.horaInicio >= form.horaFim) {
+    Swal.fire('Atenção', 'A hora de término deve ser posterior à hora de início.', 'warning')
+    return
+  }
+  carrinho.value.push(JSON.parse(JSON.stringify(form)))
+  Swal.fire({ title: 'Adicionado!', text: 'Agendamento aguardando na lista.', icon: 'success', timer: 1500, showConfirmButton: false })
+  formSubmitted.value = false
+}
+
+const removerDoCarrinho = (index) => {
+  carrinho.value.splice(index, 1)
+}
+
+const editarDoCarrinho = (index) => {
+  const item = carrinho.value[index]
+  Object.assign(form, JSON.parse(JSON.stringify(item)))
+  renderizarCamposRecursoDinamico()
+  indexEdicao.value = index
+  window.scrollTo({ top: 0, behavior: 'smooth' })
+}
+
+const salvarEdicao = () => {
+  if (!form.campus || !form.categoria || form.recursos.length === 0 || !form.tipoAgendamento || form.periodos.some(p => !p.dataInicio || !p.dataFim) || !form.horaInicio || !form.horaFim || !form.disciplina || !form.professor || !form.curso) {
+    Swal.fire('Atenção', 'Preencha todos os campos obrigatórios.', 'warning')
+    return
+  }
+  carrinho.value[indexEdicao.value] = JSON.parse(JSON.stringify(form))
+  indexEdicao.value = null
+  Swal.fire({ title: 'Salvo!', text: 'Edição atualizada no carrinho.', icon: 'success', timer: 1500, showConfirmButton: false })
+}
+
+const cancelarEdicao = () => {
+  indexEdicao.value = null
+}
+
 const alternarTipoAgendamento = () => {
   if (form.tipoAgendamento === 'pontual') {
     replicarDataPontual()
@@ -788,19 +880,37 @@ const processarAgendamento = async () => {
     return
   }
 
-  if (!form.campus || !form.categoria || form.recursos.length === 0 || !form.tipoAgendamento || form.periodos.some(p => !p.dataInicio || !p.dataFim) || !form.horaInicio || !form.horaFim || !form.disciplina || !form.professor || !form.curso) {
-    Swal.fire('Atenção', "Por favor, preencha todos os campos e selecione pelo menos um recurso.", 'warning')
+  const formsParaProcessar = [...carrinho.value]
+  
+  if (indexEdicao.value !== null) {
+    formsParaProcessar[indexEdicao.value] = JSON.parse(JSON.stringify(form))
+  } else if (form.campus && form.recursos.length > 0) {
+    const formStr = JSON.stringify(form)
+    const isInCart = carrinho.value.some(item => JSON.stringify(item) === formStr)
+    if (!isInCart) {
+      formsParaProcessar.push(JSON.parse(formStr))
+    }
+  }
+
+  if (formsParaProcessar.length === 0) {
+    Swal.fire('Atenção', "Nenhum agendamento preenchido ou no carrinho.", 'warning')
     return
   }
 
-  if (form.tipoAgendamento === 'periodo' && (!form.diasSemana || form.diasSemana.length === 0)) {
-    Swal.fire('Atenção', 'Selecione ao menos um dia da semana para a recorrência.', 'warning')
-    return
-  }
-
-  if (form.horaInicio >= form.horaFim) {
-    Swal.fire('Atenção', 'A hora de término deve ser posterior à hora de início.', 'warning')
-    return
+  for (let idx = 0; idx < formsParaProcessar.length; idx++) {
+    const f = formsParaProcessar[idx]
+    if (!f.campus || !f.categoria || f.recursos.length === 0 || !f.tipoAgendamento || f.periodos.some(p => !p.dataInicio || !p.dataFim) || !f.horaInicio || !f.horaFim || !f.disciplina || !f.professor || !f.curso) {
+      Swal.fire('Atenção', `Agendamento ${idx + 1}: Preencha todos os campos obrigatórios.`, 'warning')
+      return
+    }
+    if (f.tipoAgendamento === 'periodo' && (!f.diasSemana || f.diasSemana.length === 0)) {
+      Swal.fire('Atenção', `Agendamento ${idx + 1}: Selecione ao menos um dia da semana para a recorrência.`, 'warning')
+      return
+    }
+    if (f.horaInicio >= f.horaFim) {
+      Swal.fire('Atenção', `Agendamento ${idx + 1}: A hora de término deve ser posterior à hora de início.`, 'warning')
+      return
+    }
   }
 
   let salvos = 0
@@ -811,61 +921,68 @@ const processarAgendamento = async () => {
   const feriadosStr = configsSemestre.feriados || ''
   const feriados = feriadosStr.split(',').map(f => f.trim()).filter(f => f.length === 10)
 
-  for (const periodo of form.periodos) {
-    let dataAtual = new Date(periodo.dataInicio + 'T00:00:00')
-    const dataFimLimit = new Date(periodo.dataFim + 'T00:00:00')
+  for (const f of formsParaProcessar) {
+    for (const periodo of f.periodos) {
+      let dataAtual = new Date(periodo.dataInicio + 'T00:00:00')
+      const dataFimLimit = new Date(periodo.dataFim + 'T00:00:00')
 
-    if (dataFimLimit < dataAtual) {
-      Swal.fire('Atenção', 'A data final não pode ser anterior à data inicial.', 'warning')
-      return
-    }
-
-    while (dataAtual <= dataFimLimit) {
-      const dataIso = dataAtual.toISOString().split('T')[0]
-      
-      // Pula os feriados apenas se for um agendamento recorrente (lote)
-      if (form.tipoAgendamento === 'periodo' && feriados.includes(dataIso)) {
-        dataAtual.setDate(dataAtual.getDate() + 1)
-        continue
+      if (dataFimLimit < dataAtual) {
+        Swal.fire('Atenção', 'A data final não pode ser anterior à data inicial.', 'warning')
+        return
       }
 
-      if (form.tipoAgendamento === 'pontual' || form.diasSemana.includes(dataAtual.getDay().toString())) {
-        const dataBr = dataIso.split('-').reverse().join('/')
+      while (dataAtual <= dataFimLimit) {
+        const dataIso = dataAtual.toISOString().split('T')[0]
+        
+        if (f.tipoAgendamento === 'periodo' && feriados.includes(dataIso)) {
+          dataAtual.setDate(dataAtual.getDate() + 1)
+          continue
+        }
 
-        for (const recursoSelecionado of form.recursos) {
-          const choqueSala = reservas.value.find(i => 
-            i.campus === form.campus && i.categoria === form.categoria && i.recurso === recursoSelecionado &&
-            i.data === dataIso && verificarConflitoHorario(form.horaInicio, form.horaFim, i.horaInicio, i.horaFim)
-          )
+        if (f.tipoAgendamento === 'pontual' || f.diasSemana.includes(dataAtual.getDay().toString())) {
+          const dataBr = dataIso.split('-').reverse().join('/')
 
-          if (choqueSala) {
-            conflitos.push(`${dataBr} [${form.horaInicio}-${form.horaFim}] - Choque: ${recursoSelecionado}`)
-          } else {
-            novasReservas.push({
-              id: 'id_' + Math.random().toString(36).substr(2, 9),
-              campus: form.campus,
-              categoria: form.categoria,
-              recurso: recursoSelecionado,
-              data: dataIso,
-              horaInicio: form.horaInicio,
-              horaFim: form.horaFim,
-              disciplina: form.disciplina,
-              professor: form.professor,
-              curso: form.curso,
-              observacao: form.observacao,
-              status: 'pendente'
-            })
-            salvos++
+          for (const recursoSelecionado of f.recursos) {
+            const choqueSala = reservas.value.find(i => 
+              i.campus === f.campus && i.categoria === f.categoria && i.recurso === recursoSelecionado &&
+              i.data === dataIso && verificarConflitoHorario(f.horaInicio, f.horaFim, i.horaInicio, i.horaFim)
+            )
+
+            // Choque também com os itens recém adicionados neste mesmo lote
+            const choqueLote = novasReservas.find(i => 
+              i.campus === f.campus && i.categoria === f.categoria && i.recurso === recursoSelecionado &&
+              i.data === dataIso && verificarConflitoHorario(f.horaInicio, f.horaFim, i.horaInicio, i.horaFim)
+            )
+
+            if (choqueSala || choqueLote) {
+              conflitos.push(`${dataBr} [${f.horaInicio}-${f.horaFim}] - Choque: ${recursoSelecionado}`)
+            } else {
+              novasReservas.push({
+                id: 'id_' + Math.random().toString(36).substr(2, 9),
+                campus: f.campus,
+                categoria: f.categoria,
+                recurso: recursoSelecionado,
+                data: dataIso,
+                horaInicio: f.horaInicio,
+                horaFim: f.horaFim,
+                disciplina: f.disciplina,
+                professor: f.professor,
+                curso: f.curso,
+                observacao: f.observacao,
+                status: 'pendente'
+              })
+              salvos++
+            }
           }
         }
+        dataAtual.setDate(dataAtual.getDate() + 1)
       }
-      dataAtual.setDate(dataAtual.getDate() + 1)
     }
   }
 
   try {
     if (novasReservas.length === 0 && conflitos.length === 0) {
-      Swal.fire('Atenção', 'Nenhuma data válida encontrada no período para os dias selecionados.', 'info')
+      Swal.fire('Atenção', 'Nenhuma data válida encontrada.', 'info')
       return
     }
 
@@ -883,11 +1000,12 @@ const processarAgendamento = async () => {
         icon: 'warning'
       })
     } else {
-      Swal.fire('Sucesso!', `${salvos} reserva(s) adicionada(s) no banco de dados.`, 'success')
+      Swal.fire('Sucesso!', `${salvos} reserva(s) salva(s).`, 'success')
     }
 
-    // Reset form maintaining campus/categoria for convenience
     formSubmitted.value = false
+    carrinho.value = []
+    indexEdicao.value = null
     form.recursos = []
     form.periodos = [{ dataInicio: '', dataFim: '' }]
     form.diasSemana = []
