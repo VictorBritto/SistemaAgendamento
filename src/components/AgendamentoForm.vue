@@ -121,16 +121,23 @@
               </select>
             </div>
 
-            <div style="grid-column: 1 / -1; display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 130px), 1fr)); gap: 16px;">
-              <div>
-                <label for="dateInicio">Data Inicial</label>
-                <input type="date" id="dateInicio" v-model="form.dataInicio" :min="minDate" :max="maxDate" @change="() => { replicarDataPontual(); validarInputManual() }" required>
+            <div v-for="(periodo, index) in form.periodos" :key="index" style="margin-bottom: 12px; border: 1px solid var(--border-color); padding: 12px; border-radius: 6px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                <span style="font-weight: bold; font-size: 13px;">Período {{ index + 1 }}</span>
+                <button v-if="form.periodos.length > 1" type="button" @click="removerPeriodo(index)" style="background: none; border: none; color: #ef4444; cursor: pointer; font-size: 14px;">🗑️</button>
               </div>
-              <div :style="{ opacity: form.tipoAgendamento === 'pontual' || !form.tipoAgendamento ? 0.5 : 1 }">
-                <label for="dateFim">Data Final</label>
-                <input type="date" id="dateFim" v-model="form.dataFim" :min="minDate" :max="maxDate" :disabled="form.tipoAgendamento === 'pontual' || !form.tipoAgendamento" @change="validarInputManual" required>
+              <div style="grid-column: 1 / -1; display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 130px), 1fr)); gap: 16px;">
+                <div>
+                  <label :for="'dateInicio' + index">Data Inicial</label>
+                  <input type="date" :id="'dateInicio' + index" v-model="periodo.dataInicio" :min="minDate" :max="maxDate" @change="() => { replicarDataPontual(index); validarInputManual(index) }" required>
+                </div>
+                <div :style="{ opacity: form.tipoAgendamento === 'pontual' || !form.tipoAgendamento ? 0.5 : 1 }">
+                  <label :for="'dateFim' + index">Data Final</label>
+                  <input type="date" :id="'dateFim' + index" v-model="periodo.dataFim" :min="minDate" :max="maxDate" :disabled="form.tipoAgendamento === 'pontual' || !form.tipoAgendamento" @change="() => validarInputManual(index)" required>
+                </div>
               </div>
             </div>
+            <button type="button" @click="adicionarPeriodo" style="margin-bottom: 16px; background: var(--input-bg); border: 1px dashed var(--border-color); color: var(--text-color); padding: 8px; width: 100%; cursor: pointer; border-radius: 6px;">+ Adicionar Data Inicial e Final</button>
 
             <div v-show="form.tipoAgendamento === 'periodo'" style="grid-column: 1 / -1;">
               <label>Dias da Semana (Recorrência)</label>
@@ -397,27 +404,31 @@ const minDateBr = computed(() => minDate.value ? minDate.value.split('-').revers
 const maxDateBr = computed(() => maxDate.value ? maxDate.value.split('-').reverse().join('/') : '')
 
 const validarDatasSemestre = () => {
-  if (form.dataInicio) {
-    if (form.dataInicio < minDate.value || form.dataInicio > maxDate.value) {
-      Swal.fire('Aviso', `Você mudou para o ${semestreAtivo.value}º Semestre, mas a data inicial estava no outro semestre. A data foi redefinida.`, 'info')
-      form.dataInicio = ''
+  form.periodos.forEach(p => {
+    if (p.dataInicio) {
+      if (p.dataInicio < minDate.value || p.dataInicio > maxDate.value) {
+        Swal.fire('Aviso', `Você mudou para o ${semestreAtivo.value}º Semestre, mas uma data inicial estava no outro semestre. A data foi redefinida.`, 'info')
+        p.dataInicio = ''
+      }
     }
-  }
-  if (form.dataFim) {
-    if (form.dataFim < minDate.value || form.dataFim > maxDate.value) {
-      form.dataFim = ''
+    if (p.dataFim) {
+      if (p.dataFim < minDate.value || p.dataFim > maxDate.value) {
+        p.dataFim = ''
+      }
     }
-  }
+  })
 }
 
-const validarInputManual = () => {
-  if (form.dataInicio && (form.dataInicio < minDate.value || form.dataInicio > maxDate.value)) {
+const validarInputManual = (index) => {
+  if (index === undefined) return
+  const p = form.periodos[index]
+  if (p.dataInicio && (p.dataInicio < minDate.value || p.dataInicio > maxDate.value)) {
     Swal.fire('Atenção', `A data inicial não pertence ao ${semestreAtivo.value}º Semestre. Limites: ${minDateBr.value} a ${maxDateBr.value}.`, 'warning')
-    form.dataInicio = ''
+    p.dataInicio = ''
   }
-  if (form.dataFim && (form.dataFim < minDate.value || form.dataFim > maxDate.value)) {
+  if (p.dataFim && (p.dataFim < minDate.value || p.dataFim > maxDate.value)) {
     Swal.fire('Atenção', `A data final não pertence ao ${semestreAtivo.value}º Semestre. Limites: ${minDateBr.value} a ${maxDateBr.value}.`, 'warning')
-    form.dataFim = ''
+    p.dataFim = ''
   }
 }
 
@@ -550,8 +561,7 @@ const salvarNovoPreset = async () => {
   try {
     const presetData = {
       tipoAgendamento: form.tipoAgendamento,
-      dataInicio: form.dataInicio,
-      dataFim: form.dataFim,
+      periodos: JSON.parse(JSON.stringify(form.periodos)),
       diasSemana: [...form.diasSemana],
       horaInicio: form.horaInicio,
       horaFim: form.horaFim
@@ -575,8 +585,13 @@ const carregarPreset = () => {
     const jsonStr = presetSelecionado.value.split('||')[1]
     const data = JSON.parse(jsonStr)
     form.tipoAgendamento = data.tipoAgendamento || ''
-    form.dataInicio = data.dataInicio || ''
-    form.dataFim = data.dataFim || ''
+    
+    if (data.periodos) {
+      form.periodos = data.periodos
+    } else {
+      form.periodos = [{ dataInicio: data.dataInicio || '', dataFim: data.dataFim || '' }]
+    }
+    
     form.diasSemana = data.diasSemana || []
     form.horaInicio = data.horaInicio || ''
     form.horaFim = data.horaFim || ''
@@ -673,8 +688,7 @@ const form = reactive({
   campus: '',
   categoria: '',
   recursos: [],
-  dataInicio: '',
-  dataFim: '',
+  periodos: [{ dataInicio: '', dataFim: '' }],
   diasSemana: [],
   horaInicio: '',
   horaFim: '',
@@ -736,19 +750,29 @@ const renderizarCamposRecursoDinamico = () => {
   recursosDisponiveis.value = finalLista
 }
 
+const adicionarPeriodo = () => {
+  form.periodos.push({ dataInicio: '', dataFim: '' })
+}
+
+const removerPeriodo = (index) => {
+  form.periodos.splice(index, 1)
+}
+
 const alternarTipoAgendamento = () => {
   if (form.tipoAgendamento === 'pontual') {
     replicarDataPontual()
-  } else if (form.tipoAgendamento === 'periodo') {
-    form.dataFim = ''
   } else {
-    form.dataFim = ''
+    form.periodos.forEach(p => p.dataFim = '')
   }
 }
 
-const replicarDataPontual = () => {
+const replicarDataPontual = (index) => {
   if (form.tipoAgendamento === 'pontual') {
-    form.dataFim = form.dataInicio
+    if (index !== undefined) {
+      form.periodos[index].dataFim = form.periodos[index].dataInicio
+    } else {
+      form.periodos.forEach(p => p.dataFim = p.dataInicio)
+    }
   }
 }
 
@@ -764,7 +788,7 @@ const processarAgendamento = async () => {
     return
   }
 
-  if (!form.campus || !form.categoria || form.recursos.length === 0 || !form.tipoAgendamento || !form.dataInicio || !form.dataFim || !form.horaInicio || !form.horaFim || !form.disciplina || !form.professor || !form.curso) {
+  if (!form.campus || !form.categoria || form.recursos.length === 0 || !form.tipoAgendamento || form.periodos.some(p => !p.dataInicio || !p.dataFim) || !form.horaInicio || !form.horaFim || !form.disciplina || !form.professor || !form.curso) {
     Swal.fire('Atenção', "Por favor, preencha todos os campos e selecione pelo menos um recurso.", 'warning')
     return
   }
@@ -779,14 +803,6 @@ const processarAgendamento = async () => {
     return
   }
 
-  let dataAtual = new Date(form.dataInicio + 'T00:00:00')
-  const dataFimLimit = new Date(form.dataFim + 'T00:00:00')
-
-  if (dataFimLimit < dataAtual) {
-    Swal.fire('Atenção', 'A data final não pode ser anterior à data inicial.', 'warning')
-    return
-  }
-
   let salvos = 0
   let conflitos = []
   let novasReservas = []
@@ -795,46 +811,56 @@ const processarAgendamento = async () => {
   const feriadosStr = configsSemestre.feriados || ''
   const feriados = feriadosStr.split(',').map(f => f.trim()).filter(f => f.length === 10)
 
-  while (dataAtual <= dataFimLimit) {
-    const dataIso = dataAtual.toISOString().split('T')[0]
-    
-    // Pula os feriados apenas se for um agendamento recorrente (lote)
-    if (form.tipoAgendamento === 'periodo' && feriados.includes(dataIso)) {
-      dataAtual.setDate(dataAtual.getDate() + 1)
-      continue
+  for (const periodo of form.periodos) {
+    let dataAtual = new Date(periodo.dataInicio + 'T00:00:00')
+    const dataFimLimit = new Date(periodo.dataFim + 'T00:00:00')
+
+    if (dataFimLimit < dataAtual) {
+      Swal.fire('Atenção', 'A data final não pode ser anterior à data inicial.', 'warning')
+      return
     }
 
-    if (form.tipoAgendamento === 'pontual' || form.diasSemana.includes(dataAtual.getDay().toString())) {
-      const dataBr = dataIso.split('-').reverse().join('/')
+    while (dataAtual <= dataFimLimit) {
+      const dataIso = dataAtual.toISOString().split('T')[0]
+      
+      // Pula os feriados apenas se for um agendamento recorrente (lote)
+      if (form.tipoAgendamento === 'periodo' && feriados.includes(dataIso)) {
+        dataAtual.setDate(dataAtual.getDate() + 1)
+        continue
+      }
 
-      for (const recursoSelecionado of form.recursos) {
-        const choqueSala = reservas.value.find(i => 
-          i.campus === form.campus && i.categoria === form.categoria && i.recurso === recursoSelecionado &&
-          i.data === dataIso && verificarConflitoHorario(form.horaInicio, form.horaFim, i.horaInicio, i.horaFim)
-        )
+      if (form.tipoAgendamento === 'pontual' || form.diasSemana.includes(dataAtual.getDay().toString())) {
+        const dataBr = dataIso.split('-').reverse().join('/')
 
-        if (choqueSala) {
-          conflitos.push(`${dataBr} [${form.horaInicio}-${form.horaFim}] - Choque: ${recursoSelecionado}`)
-        } else {
-          novasReservas.push({
-            id: 'id_' + Math.random().toString(36).substr(2, 9),
-            campus: form.campus,
-            categoria: form.categoria,
-            recurso: recursoSelecionado,
-            data: dataIso,
-            horaInicio: form.horaInicio,
-            horaFim: form.horaFim,
-            disciplina: form.disciplina,
-            professor: form.professor,
-            curso: form.curso,
-            observacao: form.observacao,
-            status: 'pendente'
-          })
-          salvos++
+        for (const recursoSelecionado of form.recursos) {
+          const choqueSala = reservas.value.find(i => 
+            i.campus === form.campus && i.categoria === form.categoria && i.recurso === recursoSelecionado &&
+            i.data === dataIso && verificarConflitoHorario(form.horaInicio, form.horaFim, i.horaInicio, i.horaFim)
+          )
+
+          if (choqueSala) {
+            conflitos.push(`${dataBr} [${form.horaInicio}-${form.horaFim}] - Choque: ${recursoSelecionado}`)
+          } else {
+            novasReservas.push({
+              id: 'id_' + Math.random().toString(36).substr(2, 9),
+              campus: form.campus,
+              categoria: form.categoria,
+              recurso: recursoSelecionado,
+              data: dataIso,
+              horaInicio: form.horaInicio,
+              horaFim: form.horaFim,
+              disciplina: form.disciplina,
+              professor: form.professor,
+              curso: form.curso,
+              observacao: form.observacao,
+              status: 'pendente'
+            })
+            salvos++
+          }
         }
       }
+      dataAtual.setDate(dataAtual.getDate() + 1)
     }
-    dataAtual.setDate(dataAtual.getDate() + 1)
   }
 
   try {
@@ -863,8 +889,7 @@ const processarAgendamento = async () => {
     // Reset form maintaining campus/categoria for convenience
     formSubmitted.value = false
     form.recursos = []
-    form.dataInicio = ''
-    form.dataFim = ''
+    form.periodos = [{ dataInicio: '', dataFim: '' }]
     form.diasSemana = []
     form.horaInicio = ''
     form.horaFim = ''
