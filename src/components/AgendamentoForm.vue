@@ -519,7 +519,7 @@ import emailjs from '@emailjs/browser'
 
 // Modal de importação
 const modalImportacaoTextoAberta = ref(false)
-const inputImportacao = ref('')
+const textoImportacao = ref('')
 
 const getCorRecurso = (recurso) => {
   if (!recurso) return { bg: '#6366f1', text: '#ffffff' }
@@ -729,7 +729,7 @@ const processarImportacao = async () => {
     observacaoFinal += "Recurso Solicitado Original: " + textoRecursoOriginal + "\n\n"
   }
   
-  const obsMatch = texto.match(/\*\s*Observação\s*\*\n([\s\S]*?)(?=\*|$)/i)
+  const obsMatch = texto.match(/\*+\s*Observação\s*\*+\n([\s\S]*?)(?=\*|$)/i)
   if (obsMatch) {
     observacaoFinal += obsMatch[1].trim()
   }
