@@ -65,11 +65,17 @@
         </div>
         <div>
           <label for="filtroSala">Filtrar por Sala</label>
-          <input type="text" id="filtroSala" v-model="filtros.sala" placeholder="Nome ou número" @input="gerarRelatorio">
+          <select id="filtroSala" v-model="filtros.sala" @change="gerarRelatorio">
+            <option value="">Todas as Salas</option>
+            <option v-for="s in salasUnicas" :key="s" :value="s">{{ s }}</option>
+          </select>
         </div>
         <div>
           <label for="filtroProfessor">Filtrar por Professor</label>
-          <input type="text" id="filtroProfessor" v-model="filtros.professor" placeholder="Nome do prof." @input="gerarRelatorio">
+          <select id="filtroProfessor" v-model="filtros.professor" @change="gerarRelatorio">
+            <option value="">Todos os Professores</option>
+            <option v-for="p in professoresUnicos" :key="p" :value="p">{{ p }}</option>
+          </select>
         </div>
       </div>
     </div>
@@ -268,11 +274,17 @@
         <div class="input-grid" style="grid-template-columns: 1fr 1fr; gap: 12px;">
           <div>
             <label>Sala / Recurso</label>
-            <input type="text" v-model="filtroLote.recurso" placeholder="Opcional (Ex: SL 01)">
+            <select v-model="filtroLote.recurso">
+              <option value="">Opcional (Todas)</option>
+              <option v-for="s in salasUnicas" :key="s" :value="s">{{ s }}</option>
+            </select>
           </div>
           <div>
             <label>Professor</label>
-            <input type="text" v-model="filtroLote.professor" placeholder="Opcional (Ex: Nome)">
+            <select v-model="filtroLote.professor">
+              <option value="">Opcional (Todos)</option>
+              <option v-for="p in professoresUnicos" :key="p" :value="p">{{ p }}</option>
+            </select>
           </div>
           <div>
             <label>Data Inicial (Opcional)</label>
@@ -428,6 +440,16 @@ const salvarEdicao = async (dadosDaEdicao) => {
     Swal.fire('Erro', 'Falha ao salvar a(s) edição(ões).', 'error')
   }
 }
+
+const salasUnicas = computed(() => {
+  const set = new Set(reservas.value.map(r => r.recurso).filter(Boolean))
+  return Array.from(set).sort()
+})
+
+const professoresUnicos = computed(() => {
+  const set = new Set(reservas.value.map(r => r.professor).filter(Boolean))
+  return Array.from(set).sort()
+})
 
 const configuracaoGlobal = reactive({
   minDate: '2026-02-23',

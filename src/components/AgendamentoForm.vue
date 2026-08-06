@@ -239,7 +239,7 @@
               <div>
                 <label for="professor">Professor Responsável</label>
                 <div>
-                  <select id="professor" v-model="form.professor" @change="aoSelecionarProfessor" required>
+                  <select id="professor" v-model="form.professor" required>
                     <option value="">-- Selecione o Professor --</option>
                     <option v-for="prof in professoresDisponiveis" :key="prof.nome" :value="prof.nome">{{ prof.nome }}</option>
                   </select>
@@ -511,7 +511,7 @@
 </template>
 
 <script setup>
-import { reactive, ref, computed, onMounted } from 'vue'
+import { reactive, ref, computed, onMounted, watch } from 'vue'
 import Swal from 'sweetalert2'
 import { useReservas } from '../composables/useReservas'
 import { useAuth } from '../composables/useAuth'
@@ -519,7 +519,109 @@ import emailjs from '@emailjs/browser'
 
 // Modal de importação
 const modalImportacaoTextoAberta = ref(false)
-const textoImportacao = ref('')
+const inputImportacao = ref('')
+
+const getCorRecurso = (recurso) => {
+  if (!recurso) return { bg: '#6366f1', text: '#ffffff' }
+  const recUpper = recurso.toUpperCase()
+  if (recUpper.includes('AZUL ESC')) return { bg: '#1E40AF', text: '#ffffff' }
+  if (recUpper.includes('AZUL CLR') || recUpper.includes('AZUL CLARO')) return { bg: '#7DD3FC', text: '#000000' }
+  if (recUpper.includes('AMARELA')) return { bg: '#FDE047', text: '#000000' }
+  if (recUpper.includes('LARANJA')) return { bg: '#F97316', text: '#ffffff' }
+  if (recUpper.includes('ROXA')) return { bg: '#9333EA', text: '#ffffff' }
+  if (recUpper.includes('VERDE')) return { bg: '#22C55E', text: '#ffffff' }
+  return { bg: '#6366f1', text: '#ffffff' } // Padrão
+}
+
+const gerarCalendarioHtml = (reservas) => {
+  if (!reservas || reservas.length === 0) return ''
+  
+  const reservasPorMes = {}
+  reservas.forEach(r => {
+    const dataObj = new Date(r.data + 'T12:00:00')
+    const ano = dataObj.getFullYear()
+    const mes = dataObj.getMonth()
+    const key = `${ano}-${mes}`
+    if (!reservasPorMes[key]) {
+      reservasPorMes[key] = { ano, mes, dias: {} }
+    }
+    reservasPorMes[key].dias[dataObj.getDate()] = r.recurso
+  })
+
+  const nomesMeses = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"]
+  
+  let html = `<div style="margin-top: 24px;">`
+  html += `<h4 style="margin: 0 0 12px 0; color: #111827; font-size: 15px;">Visualização no Calendário</h4>`
+  
+  const keysSorted = Object.keys(reservasPorMes).sort((a, b) => {
+    const [aAno, aMes] = a.split('-').map(Number)
+    const [bAno, bMes] = b.split('-').map(Number)
+    return aAno !== bAno ? aAno - bAno : aMes - bMes
+  })
+
+  keysSorted.forEach(key => {
+    const { ano, mes, dias } = reservasPorMes[key]
+    const primeiroDia = new Date(ano, mes, 1)
+    const diaSemanaPrimeiro = primeiroDia.getDay()
+    const totalDias = new Date(ano, mes + 1, 0).getDate()
+    
+    html += `
+    <table style="border-collapse: collapse; background-color: #fff; border: 1px solid #e5e7eb; border-radius: 8px; font-size: 12px; text-align: center; margin-bottom: 16px; width: 100%; max-width: 320px;">
+      <thead>
+        <tr>
+          <th colspan="7" style="padding: 10px; color: #4f46e5; font-size: 14px; border-bottom: 1px solid #e5e7eb;">
+            ${nomesMeses[mes]} ${ano}
+          </th>
+        </tr>
+        <tr style="color: #6b7280;">
+          <th style="padding: 6px 2px;">Dom</th>
+          <th style="padding: 6px 2px;">Seg</th>
+          <th style="padding: 6px 2px;">Ter</th>
+          <th style="padding: 6px 2px;">Qua</th>
+          <th style="padding: 6px 2px;">Qui</th>
+          <th style="padding: 6px 2px;">Sex</th>
+          <th style="padding: 6px 2px;">Sáb</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+    `
+    
+    let diaAtualNaSemana = 0
+    for (let i = 0; i < diaSemanaPrimeiro; i++) {
+      html += `<td></td>`
+      diaAtualNaSemana++
+    }
+    
+    for (let dia = 1; dia <= totalDias; dia++) {
+      if (diaAtualNaSemana === 7) {
+        html += `</tr><tr>`
+        diaAtualNaSemana = 0
+      }
+      const recursoDia = dias[dia]
+      if (recursoDia) {
+        const cor = getCorRecurso(recursoDia)
+        html += `<td style="padding: 4px;">
+                   <div style="background-color: ${cor.bg}; color: ${cor.text}; border-radius: 6px; width: 24px; height: 24px; line-height: 24px; margin: auto; font-weight: bold;">
+                     ${dia}
+                   </div>
+                 </td>`
+      } else {
+        html += `<td style="padding: 4px; color: #d1d5db;">${dia}</td>`
+      }
+      diaAtualNaSemana++
+    }
+    
+    while (diaAtualNaSemana < 7) {
+      html += `<td></td>`
+      diaAtualNaSemana++
+    }
+    html += `</tr></tbody></table>`
+  })
+  
+  html += `</div>`
+  return html
+}
 
 const fecharModalImportacao = () => {
   modalImportacaoTextoAberta.value = false
@@ -823,12 +925,7 @@ const salvarNovoProfessor = async () => {
   }
 }
 
-const aoSelecionarProfessor = () => {
-  const profObj = professoresDisponiveis.value.find(p => p.nome === form.professor)
-  if (profObj && profObj.curso) {
-    form.curso = profObj.curso
-  }
-}
+
 
 const salvarNovoCurso = async () => {
   if (!novoCursoNome.value.trim()) return
@@ -996,6 +1093,19 @@ const form = reactive({
   emailProfessor: '',
   observacao: '',
   tipoAgendamento: 'pontual'
+})
+
+watch(() => form.professor, (novoProf) => {
+  if (!novoProf) return
+  const profObj = professoresDisponiveis.value.find(p => p.nome === novoProf)
+  if (profObj && profObj.curso) {
+    const cursoCorreto = cursosDisponiveis.value.find(c => c.trim().toLowerCase() === profObj.curso.trim().toLowerCase())
+    if (cursoCorreto) {
+      form.curso = cursoCorreto
+    } else {
+      form.curso = profObj.curso
+    }
+  }
 })
 
 const itemsParaProcessarCount = computed(() => {
@@ -1266,17 +1376,39 @@ const processarAgendamento = async () => {
           }
         })
         
-        let msgCorpo = `Gostaríamos de confirmar que as solicitações de agendamento para a disciplina "${formOriginal.disciplina}" foram processadas com sucesso no sistema.\n\n`
-        msgCorpo += `Detalhes da Solicitação:\n`
-        msgCorpo += `- Curso: ${formOriginal.curso}\n`
+        let msgCorpo = `<div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; color: #374151; line-height: 1.6; max-width: 600px; margin: 0 auto; border: 1px solid #e5e7eb; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.05);">`
+        msgCorpo += `<div style="background-color: #4f46e5; color: white; padding: 24px; text-align: center;">`
+        msgCorpo += `<h2 style="margin: 0; font-size: 22px; font-weight: 600;">Confirmação de Agendamento</h2>`
+        msgCorpo += `</div>`
+        msgCorpo += `<div style="padding: 32px;">`
+        msgCorpo += `<p style="font-size: 16px; margin-top: 0;">Olá, <strong>Prof. ${formOriginal.professor}</strong>,</p>`
+        msgCorpo += `<p>Gostaríamos de confirmar que as solicitações de agendamento para a disciplina <strong>"${formOriginal.disciplina}"</strong> foram processadas com sucesso no sistema.</p>`
+        
+        msgCorpo += `<div style="background-color: #f9fafb; border-left: 4px solid #4f46e5; padding: 16px; margin: 24px 0; border-radius: 0 8px 8px 0;">`
+        msgCorpo += `<h3 style="margin-top: 0; margin-bottom: 12px; color: #111827; font-size: 16px;">Detalhes da Solicitação</h3>`
+        msgCorpo += `<ul style="margin: 0; padding-left: 20px; color: #4b5563;">`
+        msgCorpo += `<li style="margin-bottom: 6px;"><strong>Sala(s):</strong> ${formOriginal.recursos.join(', ')}</li>`
+        msgCorpo += `<li style="margin-bottom: 6px;"><strong>Curso:</strong> ${formOriginal.curso}</li>`
         if (formOriginal.observacao) {
-          msgCorpo += `- Observação: ${formOriginal.observacao}\n`
+          msgCorpo += `<li><strong>Observação:</strong> ${formOriginal.observacao}</li>`
         }
-        msgCorpo += `\nForam aprovadas e lançadas ${salvos} novas reservas no sistema.\n`
+        msgCorpo += `</ul>`
+        msgCorpo += `</div>`
+
+        msgCorpo += `<p style="font-size: 15px;">✅ Foram aprovadas e lançadas <strong style="color: #059669; font-size: 16px;">${salvos} novas reservas</strong> no sistema.</p>`
+        
         if (conflitos.length > 0) {
-          msgCorpo += `\nAtenção: algumas das datas solicitadas sofreram choque de horário com outras turmas e não puderam ser reservadas.\n`
+          msgCorpo += `<div style="background-color: #fef2f2; border-left: 4px solid #ef4444; padding: 12px 16px; margin-top: 20px; border-radius: 0 8px 8px 0; color: #991b1b; font-size: 14px;">`
+          msgCorpo += `⚠️ <strong>Atenção:</strong> algumas das datas solicitadas sofreram choque de horário com outras turmas e não puderam ser reservadas.`
+          msgCorpo += `</div>`
         }
-        msgCorpo += `\nAtenciosamente,\nCoordenação.`
+
+        // Anexando o calendário
+        msgCorpo += gerarCalendarioHtml(novasReservas)
+
+        msgCorpo += `<hr style="border: none; border-top: 1px solid #e5e7eb; margin: 32px 0 24px 0;" />`
+        msgCorpo += `<p style="color: #6b7280; font-size: 14px; margin-bottom: 0;">Atenciosamente,<br><strong style="color: #374151;">Coordenação FHO</strong></p>`
+        msgCorpo += `</div></div>`
 
         const templateParams = {
           to_email: formOriginal.emailProfessor,
@@ -1285,10 +1417,10 @@ const processarAgendamento = async () => {
           message: msgCorpo
         }
 
-        // Substitua 'YOUR_SERVICE_ID', 'YOUR_TEMPLATE_ID', 'YOUR_PUBLIC_KEY' pelas suas chaves
+        // Substitua COLOQUE_O_TEMPLATE_ID_AQUI pelo Template ID real do site
         await emailjs.send(
-          'Agendamento',
-          'SistemaAgendamentos',
+          'service_wrkaawp',
+          'template_89sqjl2',
           templateParams,
           '0U2_PC73g93wtLvjG'
         )
