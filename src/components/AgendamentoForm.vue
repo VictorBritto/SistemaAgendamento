@@ -1407,7 +1407,7 @@ const processarAgendamento = async () => {
         msgCorpo += gerarCalendarioHtml(novasReservas)
 
         msgCorpo += `<hr style="border: none; border-top: 1px solid #e5e7eb; margin: 32px 0 24px 0;" />`
-        msgCorpo += `<p style="color: #6b7280; font-size: 14px; margin-bottom: 0;">Atenciosamente,<br><strong style="color: #374151;">Coordenação FHO</strong></p>`
+        msgCorpo += `<p style="color: #6b7280; font-size: 14px; margin-bottom: 0;">Atenciosamente,<br><strong style="color: #374151;">Suporte Informática FHO</strong></p>`
         msgCorpo += `</div></div>`
 
         const templateParams = {
