@@ -64,6 +64,19 @@
           <input type="date" id="filtroDataFim" v-model="filtros.dataFim" :min="configuracaoGlobal.minDate" :max="configuracaoGlobal.maxDate" @change="gerarRelatorio">
         </div>
         <div>
+          <label for="filtroDiaSemana">Dia da Semana</label>
+          <select id="filtroDiaSemana" v-model="filtros.diaSemana" @change="gerarRelatorio">
+            <option value="">Todos os Dias</option>
+            <option value="Seg">Segunda-feira</option>
+            <option value="Ter">Terça-feira</option>
+            <option value="Qua">Quarta-feira</option>
+            <option value="Qui">Quinta-feira</option>
+            <option value="Sex">Sexta-feira</option>
+            <option value="Sáb">Sábado</option>
+            <option value="Dom">Domingo</option>
+          </select>
+        </div>
+        <div>
           <label for="filtroSala">Filtrar por Sala</label>
           <select id="filtroSala" v-model="filtros.sala" @change="gerarRelatorio">
             <option value="">Todas as Salas</option>
@@ -463,7 +476,8 @@ const filtros = reactive({
   dataInicio: '2026-02-23',
   dataFim: '2026-06-26',
   sala: '',
-  professor: ''
+  professor: '',
+  diaSemana: ''
 })
 
 onMounted(async () => {
@@ -810,6 +824,12 @@ const recalcularTabela = () => {
     if (campusOk && categoriaOk && dateOk) {
       if (filtros.sala && (!item.recurso || !item.recurso.toLowerCase().includes(filtros.sala.toLowerCase()))) return
       if (filtros.professor && (!item.professor || !item.professor.toLowerCase().includes(filtros.professor.toLowerCase()))) return
+      
+      if (filtros.diaSemana) {
+        const diaObj = new Date(item.data + 'T12:00:00')
+        const diaTxt = diasSemanaTexto[diaObj.getDay()]
+        if (diaTxt !== filtros.diaSemana) return
+      }
       
       if (!mapa[item.data]) mapa[item.data] = {}
       if (!mapa[item.data][item.recurso]) mapa[item.data][item.recurso] = []
