@@ -522,14 +522,31 @@ const coresPorRecurso = [
 
 const mapaCoresRecurso = ref({})
 
+const getCorFixa = (recurso) => {
+  if (!recurso) return null
+  const recUpper = recurso.toUpperCase()
+  if (recUpper.includes('AZUL ESC')) return { bg: '#1E40AF', text: '#ffffff' }
+  if (recUpper.includes('AZUL CLR') || recUpper.includes('AZUL CLARO')) return { bg: '#7DD3FC', text: '#000000' }
+  if (recUpper.includes('AMARELA')) return { bg: '#FDE047', text: '#000000' }
+  if (recUpper.includes('LARANJA')) return { bg: '#F97316', text: '#ffffff' }
+  if (recUpper.includes('ROXA')) return { bg: '#9333EA', text: '#ffffff' }
+  if (recUpper.includes('VERDE')) return { bg: '#22C55E', text: '#ffffff' }
+  return null
+}
+
 const atribuirCoresAosRecursos = () => {
   const mapa = {}
   let idx = 0
   linhasTabela.value.forEach(linha => {
     Object.keys(linha.recursos).forEach(recurso => {
       if (!mapa[recurso]) {
-        mapa[recurso] = coresPorRecurso[idx % coresPorRecurso.length]
-        idx++
+        const corFixa = getCorFixa(recurso)
+        if (corFixa) {
+          mapa[recurso] = corFixa
+        } else {
+          mapa[recurso] = coresPorRecurso[idx % coresPorRecurso.length]
+          idx++
+        }
       }
     })
   })
