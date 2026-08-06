@@ -524,6 +524,17 @@ const mapaCoresRecurso = ref({})
 
 const getCorFixa = (recurso) => {
   if (!recurso) return null
+  const hexMatch = recurso.match(/- HEX:(#[0-9A-Fa-f]{6})$/i)
+  if (hexMatch) {
+    const hex = hexMatch[1]
+    const r = parseInt(hex.slice(1, 3), 16)
+    const g = parseInt(hex.slice(3, 5), 16)
+    const b = parseInt(hex.slice(5, 7), 16)
+    const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255
+    const textColor = luminance > 0.5 ? '#000000' : '#ffffff'
+    return { bg: hex, text: textColor }
+  }
+
   const recUpper = recurso.toUpperCase()
   if (recUpper.includes('AZUL ESC')) return { bg: '#1E40AF', text: '#ffffff' }
   if (recUpper.includes('AZUL CLR') || recUpper.includes('AZUL CLARO')) return { bg: '#7DD3FC', text: '#000000' }

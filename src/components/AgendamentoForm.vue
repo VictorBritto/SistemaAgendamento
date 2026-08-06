@@ -401,6 +401,39 @@
               <label>Nome do Recurso</label>
               <input type="text" v-model="novoRecursoNome" placeholder="Ex: Laboratório 01" required>
             </div>
+            <div class="input-group">
+              <label style="margin-bottom: 8px; display: block;">Cor de Identificação</label>
+              <div style="display: flex; flex-direction: column; padding: 12px; border: 1px solid var(--border-color); border-radius: 8px; background: rgba(0,0,0,0.02);">
+                <label style="display: flex; align-items: center; justify-content: space-between; cursor: pointer; width: 100%; margin: 0;">
+                  <span style="font-size: 13px; font-weight: 600; color: var(--text-color);">Personalizar Cor</span>
+                  <div style="position: relative; display: inline-block; width: 36px; height: 20px;">
+                    <input type="checkbox" v-model="usarCorPersonalizada" style="opacity: 0; width: 0; height: 0; position: absolute;">
+                    <span :style="{
+                      position: 'absolute', cursor: 'pointer', top: 0, left: 0, right: 0, bottom: 0,
+                      backgroundColor: usarCorPersonalizada ? '#6366f1' : 'var(--border-color)',
+                      transition: '.3s', borderRadius: '20px'
+                    }">
+                      <span :style="{
+                        position: 'absolute', height: '14px', width: '14px',
+                        left: usarCorPersonalizada ? '19px' : '3px', bottom: '3px',
+                        backgroundColor: 'white', transition: '.3s', borderRadius: '50%',
+                        boxShadow: '0 1px 3px rgba(0,0,0,0.2)'
+                      }"></span>
+                    </span>
+                  </div>
+                </label>
+                
+                <div v-if="usarCorPersonalizada" style="display: flex; align-items: center; gap: 12px; margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border-color);">
+                  <div style="position: relative; width: 36px; height: 36px; border-radius: 6px; overflow: hidden; border: 1px solid var(--border-color); box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+                    <input type="color" v-model="novaCorRecurso" style="position: absolute; top: -10px; left: -10px; width: 60px; height: 60px; padding: 0; border: none; cursor: pointer; background: transparent;">
+                  </div>
+                  <div style="display: flex; flex-direction: column; justify-content: center;">
+                    <span style="font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px; color: #64748b; font-weight: 700; margin-bottom: 2px;">CÓDIGO HEX</span>
+                    <span style="font-size: 14px; font-family: 'Courier New', Courier, monospace; font-weight: 600; color: var(--text-color);">{{ novaCorRecurso.toUpperCase() }}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
             <div style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 8px;">
               <button type="button" @click="fecharModalCadastro" class="btn-cancel" style="width: auto; margin: 0;">Cancelar</button>
               <button type="button" @click="salvarNovoRecurso" class="btn-submit" style="width: auto; margin: 0;">Salvar</button>
@@ -523,6 +556,17 @@ const textoImportacao = ref('')
 
 const getCorRecurso = (recurso) => {
   if (!recurso) return { bg: '#6366f1', text: '#ffffff' }
+  const hexMatch = recurso.match(/- HEX:(#[0-9A-Fa-f]{6})$/i)
+  if (hexMatch) {
+    const hex = hexMatch[1]
+    const r = parseInt(hex.slice(1, 3), 16)
+    const g = parseInt(hex.slice(3, 5), 16)
+    const b = parseInt(hex.slice(5, 7), 16)
+    const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255
+    const textColor = luminance > 0.5 ? '#000000' : '#ffffff'
+    return { bg: hex, text: textColor }
+  }
+
   const recUpper = recurso.toUpperCase()
   if (recUpper.includes('AZUL ESC')) return { bg: '#1E40AF', text: '#ffffff' }
   if (recUpper.includes('AZUL CLR') || recUpper.includes('AZUL CLARO')) return { bg: '#7DD3FC', text: '#000000' }
@@ -865,6 +909,8 @@ const salvarConfigSemestre = async () => {
 }
 
 const novoRecursoNome = ref('')
+const novaCorRecurso = ref('#6366f1')
+const usarCorPersonalizada = ref(false)
 const novoProfessorNome = ref('')
 const novoProfessorCurso = ref('')
 const novoCursoNome = ref('')
@@ -894,11 +940,16 @@ const presetsDisponiveis = computed(() => recursosExtras.value.filter(r => r.cat
 const salvarNovoRecurso = async () => {
   if (!novoRecursoNome.value.trim()) return
   try {
-    const nome = novoRecursoNome.value.trim()
-    await adicionarRecursoExtra(form.campus, form.categoria, nome)
+    const nomeBase = novoRecursoNome.value.trim()
+    const nomeFinal = usarCorPersonalizada.value ? `${nomeBase} - HEX:${novaCorRecurso.value}` : nomeBase
+    await adicionarRecursoExtra(form.campus, form.categoria, nomeFinal)
     renderizarCamposRecursoDinamico()
-    form.recurso = nome
+    if (!form.recursos.includes(nomeFinal)) {
+      form.recursos = [...form.recursos, nomeFinal]
+    }
     novoRecursoNome.value = ''
+    novaCorRecurso.value = '#6366f1'
+    usarCorPersonalizada.value = false
     fecharModalCadastro()
   } catch(e) {
     Swal.fire('Erro', 'Falha ao salvar o novo recurso.', 'error')
@@ -1004,37 +1055,133 @@ const editarRecursoExtra = async (categoria, nomeReferencia) => {
   
   if (!recursoAlvo) return
 
-  const { value: novoNome } = await Swal.fire({
-    title: `Editar ${categoria === 'preset_horario' ? 'Preset' : categoria === 'professor' ? 'Professor' : categoria === 'curso' ? 'Curso' : 'Recurso'}`,
-    input: 'text',
-    inputValue: nomeReferencia.split('||')[0],
-    showCancelButton: true,
-    confirmButtonText: 'Salvar',
-    cancelButtonText: 'Cancelar',
-    inputValidator: (value) => {
-      if (!value) return 'Você precisa digitar um nome!'
+  const isNormalResource = !['preset_horario', 'professor', 'curso'].includes(categoria)
+
+  let novoNome = null
+  let nomeFinalParaSalvar = null
+
+  if (isNormalResource) {
+    let currentName = nomeReferencia
+    let currentColor = '#6366f1'
+    let hasCustomColor = false
+    
+    const hexMatch = currentName.match(/- HEX:(#[0-9A-Fa-f]{6})$/i)
+    if (hexMatch) {
+      hasCustomColor = true
+      currentColor = hexMatch[1]
+      currentName = currentName.slice(0, -hexMatch[0].length).trim()
+    } else {
+      const legacyColors = ['- AZUL ESC', '- AZUL CLR', '- AMARELA', '- LARANJA', '- ROXA', '- VERDE', '- AZUL CLARO']
+      const foundLegacy = legacyColors.find(c => currentName.toUpperCase().endsWith(c))
+      if (foundLegacy) {
+        currentName = currentName.slice(0, -foundLegacy.length).trim()
+      }
     }
-  })
+
+    const swalHtml = `
+      <div style="text-align: left; margin-top: 10px; font-family: inherit;">
+        <label style="font-size: 11px; font-weight: 700; color: #1e293b; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; display: block;">Nome do Recurso</label>
+        <input id="swal-input-name" class="swal2-input" style="width: 100%; box-sizing: border-box; margin: 0 0 24px 0; max-width: 100%; height: 46px; font-size: 15px; border-radius: 6px; border: 1px solid #cbd5e1; box-shadow: none;" value="${currentName}">
+        
+        <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; width: fit-content; user-select: none;">
+          <div style="position: relative; display: flex; align-items: center; justify-content: center; width: 20px; height: 20px; background: ${hasCustomColor ? '#e0e7ff' : '#f1f5f9'}; border: 1px solid ${hasCustomColor ? '#818cf8' : '#cbd5e1'}; border-radius: 4px; transition: .2s;">
+            <input type="checkbox" id="swal-use-color" ${hasCustomColor ? 'checked' : ''} style="opacity: 0; position: absolute; width: 100%; height: 100%; cursor: pointer; margin: 0;">
+            <svg id="swal-check-icon" style="display: ${hasCustomColor ? 'block' : 'none'}; width: 14px; height: 14px; color: #4f46e5;" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"></path></svg>
+          </div>
+          <span style="font-size: 12px; font-weight: 700; color: #0f172a; text-transform: uppercase; letter-spacing: 0.5px; margin-top: 1px;">Personalizar Cor</span>
+        </label>
+        
+        <div id="swal-color-container" style="display: ${hasCustomColor ? 'flex' : 'none'}; align-items: center; gap: 12px; margin-top: 12px;">
+          <div style="position: relative; width: 36px; height: 36px; border-radius: 4px; overflow: hidden; border: 1px solid #cbd5e1; box-shadow: 0 1px 2px rgba(0,0,0,0.05);">
+             <input type="color" id="swal-input-color" value="${currentColor}" style="position: absolute; top: -10px; left: -10px; width: 60px; height: 60px; padding: 0; border: none; cursor: pointer; background: transparent;">
+          </div>
+          <span id="swal-color-label" style="font-size: 13px; font-family: 'Courier New', Courier, monospace; font-weight: 600; color: #334155;">${currentColor.toUpperCase()}</span>
+        </div>
+      </div>
+    `
+
+    const { value: formValues } = await Swal.fire({
+      title: 'Editar Recurso',
+      html: swalHtml,
+      showCancelButton: true,
+      confirmButtonText: 'Salvar',
+      cancelButtonText: 'Cancelar',
+      confirmButtonColor: '#6366f1',
+      cancelButtonColor: '#64748b',
+      didOpen: () => {
+        const checkbox = document.getElementById('swal-use-color')
+        const container = document.getElementById('swal-color-container')
+        const colorInput = document.getElementById('swal-input-color')
+        const colorLabel = document.getElementById('swal-color-label')
+        const checkIcon = document.getElementById('swal-check-icon')
+        const checkboxBg = checkbox.parentElement
+        
+        checkbox.addEventListener('change', (e) => {
+          const checked = e.target.checked
+          container.style.display = checked ? 'flex' : 'none'
+          checkIcon.style.display = checked ? 'block' : 'none'
+          checkboxBg.style.background = checked ? '#e0e7ff' : '#f1f5f9'
+          checkboxBg.style.borderColor = checked ? '#818cf8' : '#cbd5e1'
+        })
+        
+        colorInput.addEventListener('input', (e) => {
+          colorLabel.textContent = e.target.value.toUpperCase()
+        })
+      },
+      preConfirm: () => {
+        const name = document.getElementById('swal-input-name').value.trim()
+        if (!name) {
+          Swal.showValidationMessage('Você precisa digitar um nome!')
+          return false
+        }
+        const useColor = document.getElementById('swal-use-color').checked
+        const color = document.getElementById('swal-input-color').value
+        return { name, useColor, color }
+      }
+    })
+
+    if (formValues) {
+      novoNome = formValues.name
+      nomeFinalParaSalvar = formValues.useColor ? `${formValues.name} - HEX:${formValues.color}` : formValues.name
+    }
+
+  } else {
+    const { value: promptResult } = await Swal.fire({
+      title: `Editar ${categoria === 'preset_horario' ? 'Preset' : categoria === 'professor' ? 'Professor' : 'Curso'}`,
+      input: 'text',
+      inputValue: nomeReferencia.split('||')[0],
+      showCancelButton: true,
+      confirmButtonText: 'Salvar',
+      cancelButtonText: 'Cancelar',
+      inputValidator: (value) => {
+        if (!value) return 'Você precisa digitar um nome!'
+      }
+    })
+    
+    if (promptResult) {
+      novoNome = promptResult
+      nomeFinalParaSalvar = promptResult.trim()
+      
+      if (categoria === 'preset_horario' && nomeReferencia.includes('||')) {
+        const dadosExtras = nomeReferencia.split('||').slice(1).join('||')
+        nomeFinalParaSalvar = `${nomeFinalParaSalvar}||${dadosExtras}`
+      }
+    }
+  }
 
   if (novoNome && novoNome.trim() !== '') {
     try {
-      let nomeFinal = novoNome.trim()
-      if (categoria === 'preset_horario' && nomeReferencia.includes('||')) {
-        const dadosExtras = nomeReferencia.split('||').slice(1).join('||')
-        nomeFinal = `${nomeFinal}||${dadosExtras}`
-      }
-      
-      await atualizarRecursoExtra(recursoAlvo.id, { nome: nomeFinal })
+      await atualizarRecursoExtra(recursoAlvo.id, { nome: nomeFinalParaSalvar })
       await carregarRecursosExtras()
       
       Swal.fire('Atualizado!', 'O recurso foi atualizado com sucesso.', 'success')
       
       // Atualizar no form se estiver selecionado
-      if (categoria === 'preset_horario' && presetSelecionado.value === nomeReferencia) presetSelecionado.value = nomeFinal
+      if (categoria === 'preset_horario' && presetSelecionado.value === nomeReferencia) presetSelecionado.value = nomeFinalParaSalvar
       else if (categoria === 'professor' && form.professor === nomeReferencia.split('||')[0]) form.professor = novoNome.trim()
-      else if (categoria === 'curso' && form.curso === nomeReferencia) form.curso = nomeFinal
+      else if (categoria === 'curso' && form.curso === nomeReferencia) form.curso = nomeFinalParaSalvar
       else if (form.recursos.includes(nomeReferencia)) {
-        form.recursos = form.recursos.map(r => r === nomeReferencia ? nomeFinal : r)
+        form.recursos = form.recursos.map(r => r === nomeReferencia ? nomeFinalParaSalvar : r)
         renderizarCamposRecursoDinamico()
       }
     } catch (e) {
