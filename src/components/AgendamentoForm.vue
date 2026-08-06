@@ -1413,6 +1413,7 @@ const processarAgendamento = async () => {
         const templateParams = {
           to_email: formOriginal.emailProfessor,
           to_name: formOriginal.professor,
+          cc_email: 'suporteinformatica@fho.edu.br',
           subject: `Confirmação de Agendamento - ${formOriginal.disciplina}`,
           message: msgCorpo
         }
