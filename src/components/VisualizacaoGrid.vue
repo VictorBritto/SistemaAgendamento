@@ -161,7 +161,7 @@
                     <!-- Header Colorido -->
                     <div :style="getCorFundoFull(info.recurso)">
                       <div class="card-header" style="margin-bottom: 0;">
-                         <span class="room-name" style="font-size: 14px; color: inherit;">{{ info.recurso }}</span>
+                         <span class="room-name" style="font-size: 14px; color: inherit;">{{ formatarNomeRecurso(info.recurso) }}</span>
                          <span class="badge-status" :style="{ backgroundColor: statusBgColor(info.status), color: '#ffffff', border: 'none', padding: '4px 10px' }">{{ statusTexto(info.status) }}</span>
                       </div>
                     </div>
@@ -256,7 +256,7 @@
           <div v-for="(reservasDoRecurso, nomeRecurso) in calDetalhesDia.recursos" :key="nomeRecurso"
             style="border: 1px solid var(--border-color); border-radius: 8px; overflow: hidden;">
             <div :style="getCorFundoFull(nomeRecurso)" style="padding: 10px 14px;">
-              <strong>{{ nomeRecurso }}</strong>
+              <strong>{{ formatarNomeRecurso(nomeRecurso) }}</strong>
             </div>
             <div style="padding: 12px; display: flex; flex-direction: column; gap: 8px;">
               <div v-for="res in reservasDoRecurso" :key="res.id" style="font-size: 13px; padding: 8px; background: var(--input-bg); border-radius: 6px; border-left: 3px solid var(--primary-color);">
@@ -273,7 +273,7 @@
     <EditModal 
       v-if="reservaEmEdicao" 
       :reserva="reservaEmEdicao"
-      :tamanhoLote="tamanhoLoteEdicao"
+      :lote="loteEdicao"
       :recursosDisponiveis="obterListaRecursosDisponiveis(reservaEmEdicao.campus, reservaEmEdicao.categoria)"
       @fechar="reservaEmEdicao = null" 
       @salvar="salvarEdicao"
@@ -335,7 +335,7 @@
             Aviso: {{ reservasAExcluir.length }} agendamento(s) serão apagado(s):
           </div>
           <div v-for="res in reservasAExcluir" :key="res.id" style="font-size: 12px; color: var(--text-muted); border-bottom: 1px solid #e2e8f0; padding-bottom: 4px; margin-bottom: 4px;">
-            <strong>{{ res.recurso }}</strong> | {{ res.data.split('-').reverse().join('/') }} ({{ res.horaInicio }}) - {{ res.professor }}
+            <strong>{{ formatarNomeRecurso(res.recurso) }}</strong> | {{ res.data.split('-').reverse().join('/') }} ({{ res.horaInicio }}) - {{ res.professor }}
           </div>
         </div>
         <div v-else-if="filtroLote.recurso || filtroLote.professor" style="margin-top: 16px; font-size: 13px; color: #ef4444;">
@@ -374,32 +374,26 @@ const verificarConflitoHorario = (h1Inicio, h1Fim, h2Inicio, h2Fim) => {
   return (h1Inicio < h2Fim && h1Fim > h2Inicio)
 }
 
-const tamanhoLoteEdicao = computed(() => {
-  if (!reservaEmEdicao.value) return 0
+const loteEdicao = computed(() => {
+  if (!reservaEmEdicao.value) return []
   const ref = reservaEmEdicao.value
   return reservas.value.filter(r => 
     r.horaInicio === ref.horaInicio &&
     r.horaFim === ref.horaFim &&
     r.disciplina === ref.disciplina &&
     r.professor === ref.professor
-  ).length
+  )
 })
 
 const salvarEdicao = async (dadosDaEdicao) => {
-  const { aplicarLote, ...dadosNovos } = dadosDaEdicao
+  const { aplicarIds, ...dadosNovos } = dadosDaEdicao
   const dataIso = dadosNovos.data
   
   // Determina quais reservas serão atualizadas
   let reservasAlvo = []
   
-  if (aplicarLote) {
-    const refOriginal = reservaEmEdicao.value
-    reservasAlvo = reservas.value.filter(r => 
-      r.horaInicio === refOriginal.horaInicio &&
-      r.horaFim === refOriginal.horaFim &&
-      r.disciplina === refOriginal.disciplina &&
-      r.professor === refOriginal.professor
-    )
+  if (aplicarIds && aplicarIds.length > 0) {
+    reservasAlvo = reservas.value.filter(r => aplicarIds.includes(r.id))
   } else {
     reservasAlvo = [reservas.value.find(r => r.id === dadosNovos.id)]
   }
@@ -407,7 +401,7 @@ const salvarEdicao = async (dadosDaEdicao) => {
   // Verifica conflitos para todas as reservas alvo simultaneamente
   for (const reservaAlvo of reservasAlvo) {
     const outrasReservas = reservas.value.filter(r => r.id !== reservaAlvo.id)
-    const novaData = aplicarLote ? reservaAlvo.dataIso : dadosNovos.data
+    const novaData = (aplicarIds && aplicarIds.length > 0) ? reservaAlvo.dataIso : dadosNovos.data
     const novoRecurso = dadosNovos.recurso || reservaAlvo.recurso
 
     const choque = outrasReservas.find(i => 
@@ -427,7 +421,7 @@ const salvarEdicao = async (dadosDaEdicao) => {
 
   try {
     const promessas = reservasAlvo.map(r => {
-      const novaData = aplicarLote ? r.dataIso : dadosNovos.data
+      const novaData = (aplicarIds && aplicarIds.length > 0) ? r.dataIso : dadosNovos.data
       const novoRecurso = dadosNovos.recurso || r.recurso
       const novaReserva = {
         ...r,
@@ -446,7 +440,7 @@ const salvarEdicao = async (dadosDaEdicao) => {
     
     await Promise.all(promessas)
     
-    Swal.fire('Sucesso', aplicarLote ? `${promessas.length} reservas atualizadas com sucesso.` : 'Reserva atualizada com sucesso.', 'success')
+    Swal.fire('Sucesso', (aplicarIds && aplicarIds.length > 1) ? `${promessas.length} reservas atualizadas com sucesso.` : 'Reserva atualizada com sucesso.', 'success')
     reservaEmEdicao.value = null
     recalcularTabela()
   } catch(e) {
@@ -461,7 +455,11 @@ const salasUnicas = computed(() => {
 
 const professoresUnicos = computed(() => {
   const set = new Set(reservas.value.map(r => r.professor).filter(Boolean))
-  return Array.from(set).sort()
+  return Array.from(set).sort((a, b) => {
+    const limpoA = a.replace(/^P\d+\s*-\s*/i, '').trim().toLowerCase()
+    const limpoB = b.replace(/^P\d+\s*-\s*/i, '').trim().toLowerCase()
+    return limpoA.localeCompare(limpoB)
+  })
 })
 
 const configuracaoGlobal = reactive({
@@ -535,6 +533,11 @@ const coresPorRecurso = [
 ]
 
 const mapaCoresRecurso = ref({})
+
+const formatarNomeRecurso = (nome) => {
+  if (!nome) return ''
+  return nome.replace(/\s*-\s*HEX:#[0-9A-Fa-f]{6}$/i, '').trim()
+}
 
 const getCorFixa = (recurso) => {
   if (!recurso) return null

@@ -48,14 +48,29 @@
         <textarea v-model="form.observacao" rows="2"></textarea>
       </div>
 
-      <div v-if="tamanhoLote > 1" style="margin-top: 16px; padding: 12px; background: var(--input-bg); border: 1px solid var(--border-color); border-radius: 6px;">
-        <label style="display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: bold; cursor: pointer; margin: 0; color: var(--primary-color);">
-          <input type="checkbox" v-model="form.aplicarLote" style="width: auto; margin: 0; transform: scale(1.1);">
-          Aplicar edição para todas as {{ tamanhoLote }} ocorrências (dias/salas) deste lote?
+      <div v-if="lote.length > 1" class="batch-edit-section" :class="{ 'is-active': form.aplicarLote }">
+        <label class="batch-edit-header">
+          <input type="checkbox" v-model="form.aplicarLote" class="batch-checkbox">
+          <div class="batch-header-texts">
+            <span class="batch-title">Aplicar edição para múltiplas ocorrências deste lote?</span>
+            <p class="batch-subtitle">Altera os dados e o horário para todas as reservas selecionadas abaixo.</p>
+          </div>
         </label>
-        <p style="margin: 4px 0 0 20px; font-size: 11px; color: var(--text-muted);">
-          Altera os dados e o horário para todas as reservas no histórico que possuem exatamente a mesma disciplina, professor e horário originais desta sala.
-        </p>
+        
+        <div v-if="form.aplicarLote" class="batch-items-container">
+           <label 
+             v-for="res in lote" 
+             :key="res.id" 
+             class="batch-item"
+             :class="{ 'item-selected': form.selecionadosLote.includes(res.id) }"
+           >
+             <input type="checkbox" :value="res.id" v-model="form.selecionadosLote" class="item-checkbox">
+             <div class="item-info">
+               <span class="item-recurso">{{ formatarNomeRecurso(res.recurso) }}</span>
+               <span class="item-data">{{ res.data.split('-').reverse().join('/') }} ({{ res.horaInicio }})</span>
+             </div>
+           </label>
+        </div>
       </div>
 
       <div style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 24px;">
@@ -76,9 +91,9 @@ const props = defineProps({
     type: Object,
     default: null
   },
-  tamanhoLote: {
-    type: Number,
-    default: 1
+  lote: {
+    type: Array,
+    default: () => []
   },
   recursosDisponiveis: {
     type: Array,
@@ -99,20 +114,33 @@ const form = reactive({
   horaInicio: '',
   horaFim: '',
   observacao: '',
-  aplicarLote: false
+  aplicarLote: false,
+  selecionadosLote: []
 })
 
-watch(() => props.reserva, (newVal) => {
-  if (newVal) {
-    form.recurso = newVal.recurso || ''
-    form.data = newVal.data || ''
-    form.disciplina = newVal.disciplina
-    form.professor = newVal.professor
-    form.curso = newVal.curso
-    form.horaInicio = newVal.horaInicio
-    form.horaFim = newVal.horaFim
-    form.observacao = newVal.observacao || ''
-    form.aplicarLote = props.tamanhoLote > 1
+const formatarNomeRecurso = (nome) => {
+  if (!nome) return ''
+  return nome.replace(/\s*-\s*HEX:#[0-9A-Fa-f]{6}$/i, '').trim()
+}
+
+watch(() => [props.reserva, props.lote], ([newRes, newLote]) => {
+  if (newRes) {
+    form.recurso = newRes.recurso || ''
+    form.data = newRes.data || ''
+    form.disciplina = newRes.disciplina
+    form.professor = newRes.professor
+    form.curso = newRes.curso
+    form.horaInicio = newRes.horaInicio
+    form.horaFim = newRes.horaFim
+    form.observacao = newRes.observacao || ''
+    
+    if (newLote && newLote.length > 1) {
+      form.aplicarLote = true
+      form.selecionadosLote = newLote.map(r => r.id)
+    } else {
+      form.aplicarLote = false
+      form.selecionadosLote = []
+    }
   }
 }, { immediate: true })
 
@@ -145,7 +173,13 @@ const salvar = () => {
     Swal.fire('Atenção', 'A hora de término deve ser posterior à hora de início.', 'warning')
     return
   }
-  emit('salvar', { ...props.reserva, ...form })
+  if (form.aplicarLote && form.selecionadosLote.length === 0) {
+    Swal.fire('Atenção', 'Selecione ao menos uma ocorrência do lote para editar, ou desmarque a opção de edição em lote.', 'warning')
+    return
+  }
+  
+  const aplicarIds = form.aplicarLote ? form.selecionadosLote : []
+  emit('salvar', { ...props.reserva, ...form, aplicarIds })
 }
 </script>
 
@@ -169,6 +203,8 @@ const salvar = () => {
   border-radius: 12px;
   width: 100%;
   max-width: 500px;
+  max-height: 90vh;
+  overflow-y: auto;
   box-shadow: 0 10px 25px rgba(0,0,0,0.1);
 }
 .input-group {
@@ -193,5 +229,108 @@ const salvar = () => {
 }
 .input-date {
   height: 50px;
+}
+
+/* Batch Edit Styles */
+.batch-edit-section {
+  margin-top: 20px;
+  background: var(--input-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+.batch-edit-section.is-active {
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 1px var(--primary-color);
+}
+.batch-edit-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 16px;
+  cursor: pointer;
+  margin: 0;
+  background: rgba(99, 102, 241, 0.03); /* Subtle primary tint */
+}
+.batch-checkbox {
+  margin: 2px 0 0 0 !important;
+  width: 18px !important;
+  height: 18px !important;
+  cursor: pointer;
+  accent-color: var(--primary-color);
+}
+.batch-header-texts {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.batch-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--primary-color);
+  text-transform: none;
+}
+.batch-subtitle {
+  font-size: 11.5px;
+  color: var(--text-muted);
+  margin: 0;
+  line-height: 1.4;
+  text-transform: none;
+}
+.batch-items-container {
+  padding: 12px 16px 16px;
+  border-top: 1px solid var(--border-color);
+  background: var(--card-bg);
+  max-height: 220px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.batch-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  background: var(--input-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  cursor: pointer;
+  margin: 0;
+  transition: all 0.2s ease;
+}
+.batch-item:hover {
+  background: var(--card-bg);
+  border-color: #cbd5e1;
+}
+.batch-item.item-selected {
+  background: rgba(99, 102, 241, 0.05);
+  border-color: var(--primary-color);
+}
+.item-checkbox {
+  margin: 0 !important;
+  width: 16px !important;
+  height: 16px !important;
+  cursor: pointer;
+  accent-color: var(--primary-color);
+  flex-shrink: 0;
+}
+.item-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex-grow: 1;
+}
+.item-recurso {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-color);
+  text-transform: none;
+}
+.item-data {
+  font-size: 11.5px;
+  color: var(--text-muted);
+  text-transform: none;
 }
 </style>

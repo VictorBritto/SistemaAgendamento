@@ -55,7 +55,7 @@
                 <div v-for="rec in recursosDisponiveis" :key="rec" style="display: flex; justify-content: space-between; align-items: center; gap: 8px; border: 1px solid var(--border-color); border-radius: 4px; padding: 6px 10px; background: var(--card-bg); min-width: 0;">
                   <label class="checkbox-label" style="margin: 0; width: 100%; font-size: 12px; display: flex; align-items: flex-start; gap: 6px; cursor: pointer; min-width: 0;">
                     <input type="checkbox" :value="rec" v-model="form.recursos" style="margin-top: 2px; flex-shrink: 0;"> 
-                    <span style="flex-grow: 1; min-width: 0; line-height: 1.3; word-break: break-word;">{{ rec }}</span>
+                    <span style="flex-grow: 1; min-width: 0; line-height: 1.3; word-break: break-word;">{{ formatarNomeRecurso(rec) }}</span>
                   </label>
                   <div style="display: flex; gap: 8px; flex-shrink: 0; margin-left: 2px;">
                     <button type="button" @click="editarRecursoExtra(form.categoria, rec)" style="background: none; border: none; color: #f59e0b; cursor: pointer; padding: 2px; display: flex; align-items: center;" title="Editar">
@@ -553,6 +553,11 @@ import emailjs from '@emailjs/browser'
 // Modal de importação
 const modalImportacaoTextoAberta = ref(false)
 const textoImportacao = ref('')
+
+const formatarNomeRecurso = (nome) => {
+  if (!nome) return ''
+  return nome.replace(/\s*-\s*HEX:#[0-9A-Fa-f]{6}$/i, '').trim()
+}
 
 const getCorRecurso = (recurso) => {
   if (!recurso) return { bg: '#6366f1', text: '#ffffff' }
