@@ -680,10 +680,7 @@ const processarImportacao = async () => {
   // Extrair Solicitante (Professor)
   const solicitanteMatch = texto.match(/Solicitante:\s*(.+)/i)
   if (solicitanteMatch) {
-    const profNomeCompleto = solicitanteMatch[1].trim()
-    // Tenta extrair só o nome se houver " - " (ex: P3723 - Carlos Miranda)
-    const partes = profNomeCompleto.split('-')
-    const profNome = partes.length > 1 ? partes[partes.length - 1].trim() : profNomeCompleto
+    const profNome = solicitanteMatch[1].trim()
     
     // Tenta encontrar o professor na lista, se não, adiciona
     const profExistente = professoresDisponiveis.value.find(p => p.nome.toLowerCase() === profNome.toLowerCase())
