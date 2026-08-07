@@ -484,3 +484,5 @@ th:first-child { left: 0; z-index: 15; background-color: var(--table-header-bg);
   font-size: 12px;
   font-weight: 600;
 }
+@media print { body { background: #fff !important; } nav, .platform-header, .action-bar, .filters-container, .no-print { display: none !important; } .container, .page-panel { padding: 0 !important; margin: 0 !important; max-width: 100% !important; background: transparent !important; box-shadow: none !important; } @page { size: landscape; margin: 10mm; } }
+@media print { .navbar { display: none !important; } }

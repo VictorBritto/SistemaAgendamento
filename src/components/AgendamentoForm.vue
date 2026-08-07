@@ -1401,15 +1401,16 @@ const processarAgendamento = async () => {
     return
   }
 
-  const formsParaProcessar = [...carrinho.value]
+  const formsParaProcessar = [...carrinho.value].map(item => JSON.parse(JSON.stringify(item)))
   
   if (indexEdicao.value !== null) {
     formsParaProcessar[indexEdicao.value] = JSON.parse(JSON.stringify(form))
   } else if (form.campus && form.recursos.length > 0) {
-    const formStr = JSON.stringify(form)
-    const isInCart = carrinho.value.some(item => JSON.stringify(item) === formStr)
+    // Compara campos-chave em vez de JSON completo para evitar falsos positivos com reatividade
+    const formKey = (item) => `${item.campus}|${item.categoria}|${(item.recursos||[]).join(',')}|${(item.periodos||[]).map(p=>p.dataInicio+'_'+p.dataFim).join(',')}|${(item.diasSemana||[]).join(',')}|${item.horaInicio}|${item.horaFim}|${item.disciplina}|${item.professor}|${item.curso}|${item.tipoAgendamento}`
+    const isInCart = carrinho.value.some(item => formKey(item) === formKey(form))
     if (!isInCart) {
-      formsParaProcessar.push(JSON.parse(formStr))
+      formsParaProcessar.push(JSON.parse(JSON.stringify(form)))
     }
   }
 

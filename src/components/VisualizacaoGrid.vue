@@ -1,5 +1,5 @@
 <template>
-  <div class="agendamento-container">
+  <div v-show="!exibirRelatorioLotePrint" class="agendamento-container">
     <div class="platform-header" style="display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: 20px; margin-bottom: 24px;">
       <div>
         <h2>Cronograma de Ocupação</h2>
@@ -13,6 +13,10 @@
         <button class="btn-pdf" @click="exportarPDF">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 6px; vertical-align: text-bottom;"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
           Imprimir
+        </button>
+        <button class="btn-pdf" style="background-color: #6366f1;" @click="exportarRelatorioLotePDF">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 6px; vertical-align: text-bottom;"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+          Gerar PDF por Lote
         </button>
         <button v-if="isAdmin" class="btn-danger" @click="abrirExclusaoLote" style="background-color: #c2410c;">Apagar por Lote</button>
         <button v-if="isAdmin" class="btn-danger" @click="confirmarLimpeza">Apagar Tudo</button>
@@ -348,27 +352,339 @@
         </div>
       </div>
     </div>
+    <RelatorioLotePrint v-if="exibirRelatorioLotePrint" :reservas="reservasFiltradasParaImpressao" />
+  </div>
+
+  <!-- Container fora do v-show para html2canvas capturar corretamente -->
+  <div id="relatorio-pdf-wrapper" style="position:fixed; left:-9999px; top:0; z-index:-999; background:#fff; width:1100px; min-height:1px;">
+    <RelatorioLotePrint v-if="exibirRelatorioLotePrint" :reservas="reservasFiltradasParaImpressao" />
   </div>
 </template>
 
 <script setup>
-import { reactive, ref, computed, watch, onMounted } from 'vue'
+import { reactive, ref, computed, watch, onMounted, nextTick } from 'vue'
 import Swal from 'sweetalert2'
 import DashboardCharts from './DashboardCharts.vue'
 import { useReservas } from '../composables/useReservas'
 import { useAuth } from '../composables/useAuth'
 import EditModal from './EditModal.vue'
+import RelatorioLotePrint from './RelatorioLotePrint.vue'
 import ExcelJS from 'exceljs'
 import { saveAs } from 'file-saver'
+import html2pdf from 'html2pdf.js'
 
 const { reservas, carregarReservas, atualizarStatus, deletarReserva, deletarReservasLote, limparBanco, recursosExtras, carregarRecursosExtras, atualizarReserva } = useReservas()
 const { user, isAdmin } = useAuth()
 
 const reservaEmEdicao = ref(null)
+const exibirRelatorioLotePrint = ref(false)
+
+const reservasFiltradasParaImpressao = computed(() => {
+  const arr = []
+  linhasTabela.value.forEach(linha => {
+    Object.values(linha.recursos).forEach(reservasNoRecurso => {
+      arr.push(...reservasNoRecurso)
+    })
+  })
+  return arr
+})
 
 const abrirEdicao = (res) => {
   reservaEmEdicao.value = { ...res }
 }
+
+const exportarRelatorioLotePDF = () => {
+  if (reservasFiltradasParaImpressao.value.length === 0) {
+    Swal.fire('Atenção', 'Nenhuma reserva encontrada para gerar o relatório.', 'warning')
+    return
+  }
+
+  Swal.fire({
+    title: 'Gerando PDF...',
+    text: 'Aguarde um momento.',
+    allowOutsideClick: false,
+    didOpen: () => { Swal.showLoading() }
+  })
+
+  const nomeMeses = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro']
+
+  const getCorFundo = (recurso) => {
+    if (!recurso) return '#4f46e5'
+    const m = recurso.match(/HEX:#([0-9A-Fa-f]{6})/i)
+    if (m) return `#${m[1]}`
+    const r = recurso.toUpperCase()
+    if (r.includes('AZUL ESC')) return '#1E40AF'
+    if (r.includes('AZUL CLR') || r.includes('AZUL CLARO')) return '#7DD3FC'
+    if (r.includes('AMARELA')) return '#FDE047'
+    if (r.includes('LARANJA')) return '#F97316'
+    if (r.includes('ROXA')) return '#9333EA'
+    if (r.includes('VERDE')) return '#22C55E'
+    if (r.includes('VERMELHA') || r.includes('VERMELHO')) return '#EF4444'
+    return '#4f46e5'
+  }
+  const getCorTexto = (recurso) => ['#FDE047','#7DD3FC'].includes(getCorFundo(recurso)) ? '#000' : '#fff'
+  const formatNome = (nome) => nome ? nome.replace(/HEX:#[0-9A-Fa-f]{6}/gi, '').trim() : ''
+  const buildSemanas = (primeiroDia, dias) => {
+    const cells = Array(primeiroDia).fill(null).concat(dias)
+    while (cells.length % 7 !== 0) cells.push(null)
+    const semanas = []
+    for (let i = 0; i < cells.length; i += 7) semanas.push(cells.slice(i, i + 7))
+    return semanas
+  }
+
+  // Agrupar reservas em lotes
+  const lotesMap = new Map()
+  reservasFiltradasParaImpressao.value.forEach(r => {
+    const key = `${r.recurso}|${r.disciplina}|${r.professor}|${r.horaInicio}|${r.horaFim}|${r.curso}`
+    if (!lotesMap.has(key)) {
+      lotesMap.set(key, { recurso: r.recurso, disciplina: r.disciplina, professor: r.professor, curso: r.curso, horaInicio: r.horaInicio, horaFim: r.horaFim, datas: new Set() })
+    }
+    if (r.data) lotesMap.get(key).datas.add(r.data)
+  })
+
+  const lotes = []
+  for (const lote of lotesMap.values()) {
+    const datasArray = Array.from(lote.datas).sort()
+    if (!datasArray.length) continue
+    const inicio = new Date(datasArray[0] + 'T12:00:00')
+    const fim = new Date(datasArray[datasArray.length - 1] + 'T12:00:00')
+    const mesesCalendario = []
+    let cur = new Date(inicio.getFullYear(), inicio.getMonth(), 1)
+    const limFim = new Date(fim.getFullYear(), fim.getMonth(), 1)
+    while (cur <= limFim) {
+      const ano = cur.getFullYear()
+      const mes = cur.getMonth()
+      const totalDias = new Date(ano, mes + 1, 0).getDate()
+      const primeiroDia = new Date(ano, mes, 1).getDay()
+      const dias = []
+      let hasEvents = false
+      for (let d = 1; d <= totalDias; d++) {
+        const iso = `${ano}-${String(mes+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`
+        const isOccupied = lote.datas.has(iso)
+        if (isOccupied) hasEvents = true
+        dias.push({ numero: d, isOccupied })
+      }
+      if (hasEvents) mesesCalendario.push({ nomeCompleto: `${nomeMeses[mes]} ${ano}`, semanas: buildSemanas(primeiroDia, dias) })
+      cur = new Date(ano, mes + 1, 1)
+    }
+    lote.mesesCalendario = mesesCalendario
+    lotes.push(lote)
+  }
+  lotes.sort((a, b) => {
+    if ((a.recurso||'') !== (b.recurso||'')) return (a.recurso||'').localeCompare(b.recurso||'')
+    return (a.disciplina||'').localeCompare(b.disciplina||'')
+  })
+
+  const gerarCalHtml = (semanas, corFundo, corTexto) => {
+    const dias = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb']
+    let html = `<table class="cal-table">`
+    html += `<thead><tr>${dias.map(d => `<th>${d}</th>`).join('')}</tr></thead>`
+    html += `<tbody>`
+    semanas.forEach(semana => {
+      html += `<tr>`
+      semana.forEach(dia => {
+        if (!dia) {
+          html += `<td></td>`
+        } else if (dia.isOccupied) {
+          html += `<td class="occupied" style="background:${corFundo};color:${corTexto};">${dia.numero}</td>`
+        } else {
+          html += `<td>${dia.numero}</td>`
+        }
+      })
+      html += `</tr>`
+    })
+    html += `</tbody></table>`
+    return html
+  }
+
+  // Gerar HTML de um único lote
+  const gerarLoteHtml = (lote) => {
+    const corFundo = getCorFundo(lote.recurso)
+    const corTexto = getCorTexto(lote.recurso)
+    const nome = formatNome(lote.recurso)
+
+    const calsHtml = lote.mesesCalendario.map(mes =>
+      `<div class="mini-cal">` +
+      `<div class="month-title">${mes.nomeCompleto}</div>` +
+      gerarCalHtml(mes.semanas, corFundo, corTexto) +
+      `</div>`
+    ).join('')
+
+    return `<div class="lote-row">` +
+      `<div class="lote-card">` +
+        `<div class="card-header" style="background:${corFundo};color:${corTexto};">` +
+          `<span class="room-name">${nome}</span>` +
+          `<span class="badge">RESERVADO</span>` +
+          `<div style="clear:both;"></div>` +
+        `</div>` +
+        `<div class="card-body">` +
+          `<div class="time-badge">${lote.horaInicio} - ${lote.horaFim}</div>` +
+          `<div class="disciplina">${lote.disciplina||''}</div>` +
+          `<div class="curso"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle; margin-right: 4px;"><path d="M22 10v6M2 10l10-5 10 5-10 5z"></path><path d="M6 12v5c3 3 9 3 12 0v-5"></path></svg> ${lote.curso||''}</div>` +
+          `<div class="professor"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle; margin-right: 4px;"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg> ${lote.professor||''}</div>` +
+        `</div>` +
+      `</div>` +
+      `<div class="cals-wrapper">${calsHtml}</div>` +
+      `<div class="clearfix"></div>` +
+    `</div>`
+  }
+
+
+
+  // Cabeçalho do relatório
+  const headerHtml = `<div style="text-align:center;margin-bottom:20px;padding:12px;background:#f1f5f9;border-radius:10px;">` +
+    `<h2 style="margin:0 0 4px;color:#0f172a;font-weight:800;font-size:20px;">Relatório de Agendamentos por Lote</h2>` +
+    `<p style="margin:0;color:#64748b;font-size:13px;">Gerado em: ${new Date().toLocaleDateString('pt-BR')}</p>` +
+    `</div>`
+
+  // Montar HTML completo da página de impressão
+  let pagesHtml = ''
+  for (let i = 0; i < lotes.length; i += 2) {
+    if (i > 0) pagesHtml += `<div class="page-break"></div>`
+    pagesHtml += `<div class="page-content">`
+    pagesHtml += gerarLoteHtml(lotes[i])
+    if (lotes[i + 1]) {
+      pagesHtml += `<div class="separator"></div>`
+      pagesHtml += gerarLoteHtml(lotes[i + 1])
+    }
+    pagesHtml += `</div>`
+  }
+
+  const dataAtual = new Date().toLocaleDateString('pt-BR')
+  const fullPage = `<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Relatório de Agendamentos por Lote</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: Arial, sans-serif; background: #fff; color: #1e293b; }
+
+    .print-header {
+      text-align: center;
+      padding: 14px;
+      background: #f1f5f9;
+      border-radius: 10px;
+      margin-bottom: 20px;
+    }
+    .print-header h2 { color: #0f172a; font-weight: 800; font-size: 20px; margin-bottom: 4px; }
+    .print-header p { color: #64748b; font-size: 13px; }
+
+    .page-content { padding: 20px; }
+
+    .separator {
+      margin: 22px 0;
+      border-top: 2px dashed #e2e8f0;
+      padding-top: 22px;
+    }
+
+    .lote-row { 
+      display: flex; 
+      gap: 24px; 
+      align-items: flex-start; 
+      page-break-inside: avoid; 
+    }
+    .lote-card {
+      flex: 0 0 260px;
+      border-radius: 10px;
+      border: 1px solid #e2e8f0;
+      background: #fff;
+      overflow: hidden;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+    }
+    .card-header {
+      padding: 12px 14px;
+      font-weight: 700;
+      font-size: 13px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .card-header .room-name { flex: 1; }
+    .card-header .badge { background: rgba(255,255,255,0.28); padding: 3px 8px; border-radius: 4px; font-size: 10px; font-weight: 700; letter-spacing: 0.5px; }
+    .card-body { padding: 14px 16px; }
+    .time-badge { display: inline-block; background: #eff6ff; color: #3b82f6; font-weight: 700; font-size: 13px; padding: 6px 14px; border-radius: 20px; margin-bottom: 14px; border: none; }
+    .disciplina { font-weight: 700; font-size: 14px; color: #0f172a; margin-bottom: 8px; }
+    .curso { font-size: 12px; font-weight: 600; color: #475569; margin-bottom: 6px; }
+    .professor { font-size: 12px; color: #64748b; }
+
+    .cals-wrapper { 
+      flex: 1; 
+      display: flex; 
+      flex-direction: row; 
+      flex-wrap: wrap;
+      gap: 12px; 
+    }
+    .mini-cal { 
+      width: 165px;
+      border: 1px solid #e2e8f0; 
+      border-radius: 8px; 
+      padding: 10px; 
+      background: #fff; 
+    }
+    .month-title { text-align: center; font-weight: 700; font-size: 11px; color: #4f46e5; margin-bottom: 6px; padding-bottom: 4px; border-bottom: 1px solid #e2e8f0; }
+    .cal-table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+    .cal-table th { text-align: center; font-size: 9px; font-weight: 700; color: #94a3b8; padding: 2px 0; }
+    .cal-table td { text-align: center; font-size: 10px; color: #64748b; height: 18px; padding: 0; }
+    .cal-table td.occupied { font-weight: 700; border-radius: 3px; color: #fff; }
+
+    /* Impressão */
+    @media print {
+      @page { size: landscape; margin: 10mm; }
+      body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      .page-break { page-break-after: always; }
+      .no-print { display: none !important; }
+    }
+
+    /* Botão imprimir — só na tela */
+    .print-btn-bar {
+      position: fixed; bottom: 24px; right: 24px; z-index: 999;
+      display: flex; gap: 10px;
+    }
+    .btn-print {
+      background: #4f46e5; color: #fff; border: none; padding: 12px 28px;
+      border-radius: 8px; font-size: 15px; font-weight: 700; cursor: pointer;
+      box-shadow: 0 4px 14px rgba(79,70,229,0.4);
+    }
+    .btn-close {
+      background: #e2e8f0; color: #475569; border: none; padding: 12px 20px;
+      border-radius: 8px; font-size: 15px; font-weight: 700; cursor: pointer;
+    }
+    @media print { .print-btn-bar { display: none !important; } }
+  </style>
+</head>
+<body>
+  <!-- Barra de ação -->
+  <div class="print-btn-bar no-print">
+    <button class="btn-close" onclick="window.close()">✕ Fechar</button>
+    <button class="btn-print" onclick="window.print()">🖨️ Salvar como PDF</button>
+  </div>
+
+  <!-- Cabeçalho fixo no topo de cada página -->
+  <div class="print-header" style="margin: 20px 20px 0 20px;">
+    <h2>Relatório de Agendamentos por Lote</h2>
+    <p>Gerado em: ${dataAtual}</p>
+  </div>
+
+  ${pagesHtml}
+</body>
+</html>`
+
+  // Abre em nova aba
+  const win = window.open('', '_blank')
+  if (!win) {
+    Swal.fire('Atenção', 'O navegador bloqueou a abertura de nova aba. Permita pop-ups para este site.', 'warning')
+    return
+  }
+  win.document.open()
+  win.document.write(fullPage)
+  win.document.close()
+
+  // Fecha o loading
+  Swal.close()
+}
+
+
 
 const verificarConflitoHorario = (h1Inicio, h1Fim, h2Inicio, h2Fim) => {
   return (h1Inicio < h2Fim && h1Fim > h2Inicio)
@@ -450,7 +766,7 @@ const salvarEdicao = async (dadosDaEdicao) => {
 
 const salasUnicas = computed(() => {
   const set = new Set(reservas.value.map(r => r.recurso).filter(Boolean))
-  return Array.from(set).sort()
+  return Array.from(set).sort((a, b) => a.localeCompare(b, 'pt-BR', { numeric: true, sensitivity: 'base' }))
 })
 
 const professoresUnicos = computed(() => {
@@ -458,7 +774,7 @@ const professoresUnicos = computed(() => {
   return Array.from(set).sort((a, b) => {
     const limpoA = a.replace(/^P\d+\s*-\s*/i, '').trim().toLowerCase()
     const limpoB = b.replace(/^P\d+\s*-\s*/i, '').trim().toLowerCase()
-    return limpoA.localeCompare(limpoB)
+    return limpoA.localeCompare(limpoB, 'pt-BR', { numeric: true, sensitivity: 'base' })
   })
 })
 
