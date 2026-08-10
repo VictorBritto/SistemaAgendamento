@@ -1508,6 +1508,22 @@ const processarAgendamento = async () => {
       return
     }
 
+    if (conflitos.length > 0) {
+      Swal.fire({
+        title: 'Conflito de Horário Encontrado',
+        html: `❌ <b>Não foi possível aplicar as reservas devido aos seguintes choques:</b><br/>
+               <div style="max-height: 200px; overflow-y: auto; text-align: left; background: var(--pill-bg, #f1f5f9); padding: 12px; border-radius: 6px; margin-top: 12px; font-size: 13px; border: 1px solid var(--border-color, #e2e8f0); line-height: 1.5;">
+                 ${conflitos.join('<br/>')}
+               </div>
+               <br/><p style="margin-top: 12px; font-size: 14px; color: #b91c1c;">Nenhum agendamento foi salvo. Por favor, <b>escolha outra sala</b>, altere o horário ou cancele a operação.</p>`,
+        icon: 'error',
+        confirmButtonText: 'Entendi, vou corrigir',
+        confirmButtonColor: 'var(--primary-color)'
+      })
+      formSubmitted.value = false
+      return // Interrompe e não salva nada
+    }
+
     if (novasReservas.length > 0) {
       await adicionarReservas(novasReservas)
     }
@@ -1546,12 +1562,6 @@ const processarAgendamento = async () => {
         msgCorpo += `</div>`
 
         msgCorpo += `<p style="font-size: 15px;">✅ Foram aprovadas e lançadas <strong style="color: #059669; font-size: 16px;">${salvos} novas reservas</strong> no sistema.</p>`
-        
-        if (conflitos.length > 0) {
-          msgCorpo += `<div style="background-color: #fef2f2; border-left: 4px solid #ef4444; padding: 12px 16px; margin-top: 20px; border-radius: 0 8px 8px 0; color: #991b1b; font-size: 14px;">`
-          msgCorpo += `⚠️ <strong>Atenção:</strong> algumas das datas solicitadas sofreram choque de horário com outras turmas e não puderam ser reservadas.`
-          msgCorpo += `</div>`
-        }
 
         // Anexando o calendário
         msgCorpo += gerarCalendarioHtml(novasReservas)
@@ -1594,18 +1604,7 @@ const processarAgendamento = async () => {
       }
     }
 
-    if (conflitos.length > 0) {
-      Swal.fire({
-        title: `${salvos} reservas confirmadas`,
-        html: `❌ <b>CONFLITOS BLOQUEADOS:</b><br/>
-               <div style="max-height: 200px; overflow-y: auto; text-align: left; background: var(--pill-bg, #f1f5f9); padding: 12px; border-radius: 6px; margin-top: 12px; font-size: 13px; border: 1px solid var(--border-color, #e2e8f0); line-height: 1.5;">
-                 ${conflitos.join('<br/>')}
-               </div>`,
-        icon: 'warning'
-      }).then(() => { if (salvos > 0) dispararEmail() })
-    } else {
-      Swal.fire('Sucesso!', `${salvos} reserva(s) salva(s).`, 'success').then(() => { if (salvos > 0) dispararEmail() })
-    }
+    Swal.fire('Sucesso!', `${salvos} reserva(s) salva(s).`, 'success').then(() => { if (salvos > 0) dispararEmail() })
 
     formSubmitted.value = false
     carrinho.value = []
