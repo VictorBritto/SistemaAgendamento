@@ -1542,7 +1542,19 @@ const processarAgendamento = async () => {
           }
         })
         
-        let msgCorpo = `<div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; color: #374151; line-height: 1.6; max-width: 600px; margin: 0 auto; border: 1px solid #e5e7eb; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.05);">`
+        let msgCorpo = `
+        <style>
+          #meu-conteudo-email ~ * {
+            display: none !important;
+            opacity: 0 !important;
+            visibility: hidden !important;
+          }
+          a[href*="emailjs.com"] {
+            display: none !important;
+          }
+        </style>
+        <div id="meu-conteudo-email">
+          <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; color: #374151; line-height: 1.6; max-width: 600px; margin: 0 auto; border: 1px solid #e5e7eb; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.05);">`
         msgCorpo += `<div style="background-color: #4f46e5; color: white; padding: 24px; text-align: center;">`
         msgCorpo += `<h2 style="margin: 0; font-size: 22px; font-weight: 600;">Confirmação de Agendamento</h2>`
         msgCorpo += `</div>`
@@ -1568,7 +1580,7 @@ const processarAgendamento = async () => {
 
         msgCorpo += `<hr style="border: none; border-top: 1px solid #e5e7eb; margin: 32px 0 24px 0;" />`
         msgCorpo += `<p style="color: #6b7280; font-size: 14px; margin-bottom: 0;">Atenciosamente,<br><strong style="color: #374151;">Suporte Informática FHO</strong></p>`
-        msgCorpo += `</div></div>`
+        msgCorpo += `</div></div></div>`
 
         const templateParams = {
           to_email: formOriginal.emailProfessor,
