@@ -378,8 +378,8 @@
           </div>
 
           <div style="margin-top: 24px;">
-            <button type="submit" class="btn-submit" style="width: 100%;" @click="formSubmitted = true">
-              Processar {{ itemsParaProcessarCount > 1 ? itemsParaProcessarCount + ' Reservas' : 'Reserva' }}
+            <button type="submit" class="btn-submit" style="width: 100%;" :disabled="isSubmitting" @click="formSubmitted = true">
+              {{ isSubmitting ? 'Processando...' : 'Processar ' + (itemsParaProcessarCount > 1 ? itemsParaProcessarCount + ' Reservas' : 'Reserva') }}
             </button>
           </div>
         </div>
@@ -754,15 +754,9 @@ const processarImportacao = async () => {
     }
     renderizarCamposRecursoDinamico()
 
-    // Tenta achar número da sala no texto inteiro para marcar o checkbox
-    const salaMatch = texto.match(/(?:sala|lab|laborat[óo]rio)\s*([a-z0-9]+)/i)
-    if (salaMatch) {
-      const salaNum = salaMatch[1].toLowerCase()
-      const rec = recursosDisponiveis.value.find(r => r.toLowerCase().includes(salaNum))
-      if (rec) {
-        form.recursos = [rec]
-      }
-    }
+    // Removida a seleção automática de sala específica a pedido do usuário
+    // O sistema continuará selecionando o Campus e Categoria, 
+    // e preenchendo o "Recurso Solicitado Original" nas observações.
   }
 
   // Extrair Observação e anexar Dados Disciplina
@@ -831,6 +825,7 @@ const { reservas, carregarReservas, adicionarReservas, recursosExtras, carregarR
 const mesAtual = new Date().getMonth()
 const semestreAtivo = ref(mesAtual > 5 ? '2' : '1')
 const formSubmitted = ref(false)
+const isSubmitting = ref(false)
 const carrinho = ref([])
 const indexEdicao = ref(null)
 
@@ -1394,10 +1389,13 @@ const verificarConflitoHorario = (h1Inicio, h1Fim, h2Inicio, h2Fim) => {
 }
 
 const processarAgendamento = async () => {
+  if (isSubmitting.value) return
+  isSubmitting.value = true
   formSubmitted.value = true
   
   if (modalCadastro.value.aberto) {
     Swal.fire('Atenção', "Por favor, conclua o cadastro ou feche o modal antes de processar a reserva.", 'warning')
+    isSubmitting.value = false
     return
   }
 
@@ -1416,6 +1414,7 @@ const processarAgendamento = async () => {
 
   if (formsParaProcessar.length === 0) {
     Swal.fire('Atenção', "Nenhum agendamento preenchido ou no carrinho.", 'warning')
+    isSubmitting.value = false
     return
   }
 
@@ -1423,14 +1422,17 @@ const processarAgendamento = async () => {
     const f = formsParaProcessar[idx]
     if (!f.campus || !f.categoria || f.recursos.length === 0 || !f.tipoAgendamento || f.periodos.some(p => !p.dataInicio || !p.dataFim) || !f.horaInicio || !f.horaFim || !f.disciplina || !f.professor || !f.curso) {
       Swal.fire('Atenção', `Agendamento ${idx + 1}: Preencha todos os campos obrigatórios.`, 'warning')
+      isSubmitting.value = false
       return
     }
     if (f.tipoAgendamento === 'periodo' && (!f.diasSemana || f.diasSemana.length === 0)) {
       Swal.fire('Atenção', `Agendamento ${idx + 1}: Selecione ao menos um dia da semana para a recorrência.`, 'warning')
+      isSubmitting.value = false
       return
     }
     if (f.horaInicio >= f.horaFim) {
       Swal.fire('Atenção', `Agendamento ${idx + 1}: A hora de término deve ser posterior à hora de início.`, 'warning')
+      isSubmitting.value = false
       return
     }
   }
@@ -1450,6 +1452,7 @@ const processarAgendamento = async () => {
 
       if (dataFimLimit < dataAtual) {
         Swal.fire('Atenção', 'A data final não pode ser anterior à data inicial.', 'warning')
+        isSubmitting.value = false
         return
       }
 
@@ -1505,6 +1508,7 @@ const processarAgendamento = async () => {
   try {
     if (novasReservas.length === 0 && conflitos.length === 0) {
       Swal.fire('Atenção', 'Nenhuma data válida encontrada.', 'info')
+      isSubmitting.value = false
       return
     }
 
@@ -1521,6 +1525,7 @@ const processarAgendamento = async () => {
         confirmButtonColor: 'var(--primary-color)'
       })
       formSubmitted.value = false
+      isSubmitting.value = false
       return // Interrompe e não salva nada
     }
 
@@ -1633,6 +1638,8 @@ const processarAgendamento = async () => {
   } catch (error) {
     console.error("ERRO SUPABASE:", error)
     Swal.fire('Falha crítica', error.message || "Verifique se sua chave do Supabase está correta e se a tabela 'reservas' existe.", 'error')
+  } finally {
+    isSubmitting.value = false
   }
 }
 </script>

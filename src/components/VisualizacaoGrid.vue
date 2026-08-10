@@ -701,7 +701,12 @@ const loteEdicao = computed(() => {
   )
 })
 
+const isSubmittingEdicao = ref(false)
+
 const salvarEdicao = async (dadosDaEdicao) => {
+  if (isSubmittingEdicao.value) return
+  isSubmittingEdicao.value = true
+
   const { aplicarIds, ...dadosNovos } = dadosDaEdicao
   const dataIso = dadosNovos.data
   
@@ -731,6 +736,7 @@ const salvarEdicao = async (dadosDaEdicao) => {
     if (choque) {
       const dataBr = novaData.split('-').reverse().join('/')
       Swal.fire('Conflito!', `O novo horário [${dadosNovos.horaInicio}-${dadosNovos.horaFim}] já está ocupado na sala ${novoRecurso} do dia ${dataBr} por: ${choque.disciplina}. Nenhuma edição foi salva.`, 'error')
+      isSubmittingEdicao.value = false
       return
     }
   }
@@ -761,6 +767,8 @@ const salvarEdicao = async (dadosDaEdicao) => {
     recalcularTabela()
   } catch(e) {
     Swal.fire('Erro', 'Falha ao salvar a(s) edição(ões).', 'error')
+  } finally {
+    isSubmittingEdicao.value = false
   }
 }
 
