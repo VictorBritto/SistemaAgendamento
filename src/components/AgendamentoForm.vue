@@ -1,5 +1,11 @@
 <template>
   <div class="agendamento-container">
+    <TermoLapelaModal
+      :show="mostrarTermoLapela"
+      :dados="dadosTermoLapela"
+      @close="mostrarTermoLapela = false"
+    />
+
     <div class="platform-header" style="display: flex; justify-content: space-between; align-items: center;">
       <div>
         <h2>Painel de Agendamento</h2>
@@ -260,6 +266,12 @@
               <div>
                 <label for="emailProfessor">E-mail do Professor</label>
                 <input type="email" id="emailProfessor" v-model="form.emailProfessor" placeholder="professor@fho.edu.br">
+              </div>
+              
+              <div v-if="temMicrofoneLapela" style="padding: 16px; background: #fff8f1; border: 1px dashed #fb923c; border-radius: 8px;">
+                <label for="responsavelLapela" style="color: #c2410c; margin-bottom: 6px; font-weight: 600;">Responsável pelo Equipamento (Termo de Retirada)</label>
+                <p style="font-size: 11px; color: #9a3412; margin-top: 0; margin-bottom: 8px;">Este nome sairá impresso no Termo de Responsabilidade do Microfone de Lapela.</p>
+                <input type="text" id="responsavelLapela" v-model="form.responsavelLapela" placeholder="Nome do monitor, aluno ou pessoa que irá retirar o equipamento">
               </div>
             </div>
             
@@ -544,10 +556,11 @@
 </template>
 
 <script setup>
-import { reactive, ref, computed, onMounted, watch } from 'vue'
-import Swal from 'sweetalert2'
-import { useReservas } from '../composables/useReservas'
+import { ref, computed, reactive, watch, onMounted, nextTick } from 'vue'
 import { useAuth } from '../composables/useAuth'
+import { useReservas } from '../composables/useReservas'
+import Swal from 'sweetalert2'
+import TermoLapelaModal from './TermoLapelaModal.vue'
 import emailjs from '@emailjs/browser'
 
 // Modal de importação
@@ -828,6 +841,13 @@ const formSubmitted = ref(false)
 const isSubmitting = ref(false)
 const carrinho = ref([])
 const indexEdicao = ref(null)
+
+const mostrarTermoLapela = ref(false)
+const dadosTermoLapela = ref({
+  solicitante: '',
+  responsavel: '',
+  dataSolicitacao: ''
+})
 
 const configuracaoSemestreId = ref(null)
 const configsSemestre = reactive({
@@ -1236,8 +1256,11 @@ const form = reactive({
   curso: '',
   emailProfessor: '',
   observacao: '',
-  tipoAgendamento: 'pontual'
+  tipoAgendamento: 'pontual',
+  responsavelLapela: ''
 })
+
+const temMicrofoneLapela = computed(() => form.recursos.some(r => r.toUpperCase().includes('MICROFONE DE LAPELA HOLLYLAND')))
 
 watch(() => form.professor, (novoProf) => {
   if (!novoProf) return
@@ -1621,7 +1644,36 @@ const processarAgendamento = async () => {
       }
     }
 
-    Swal.fire('Sucesso!', `${salvos} reserva(s) salva(s).`, 'success').then(() => { if (salvos > 0) dispararEmail() })
+    const dispararTermoLapela = () => {
+      const temLapela = novasReservas.some(r => r.recurso.toUpperCase().includes('MICROFONE DE LAPELA HOLLYLAND'))
+      if (temLapela) {
+        const formOriginal = formsParaProcessar[0] || form
+        let responsavel = "Não informado"
+        
+        if (formOriginal.responsavelLapela && formOriginal.responsavelLapela.trim() !== "") {
+          responsavel = formOriginal.responsavelLapela.trim()
+        } else {
+          const matchResp = formOriginal.observacao.match(/Respons[aá]vel:\s*(.+)/i)
+          if (matchResp) {
+            responsavel = matchResp[1].split('\n')[0].trim()
+          }
+        }
+        
+        dadosTermoLapela.value = {
+          solicitante: formOriginal.professor,
+          responsavel: responsavel,
+          dataSolicitacao: new Date().toLocaleDateString('pt-BR')
+        }
+        mostrarTermoLapela.value = true
+      }
+    }
+
+    Swal.fire('Sucesso!', `${salvos} reserva(s) salva(s).`, 'success').then(() => { 
+      if (salvos > 0) {
+        dispararEmail()
+        dispararTermoLapela()
+      }
+    })
 
     formSubmitted.value = false
     carrinho.value = []
@@ -1635,6 +1687,7 @@ const processarAgendamento = async () => {
     form.professor = ''
     form.emailProfessor = ''
     form.curso = ''
+    form.responsavelLapela = ''
   } catch (error) {
     console.error("ERRO SUPABASE:", error)
     Swal.fire('Falha crítica', error.message || "Verifique se sua chave do Supabase está correta e se a tabela 'reservas' existe.", 'error')
