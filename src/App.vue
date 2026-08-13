@@ -5,6 +5,7 @@ import Navbar from './components/Navbar.vue'
 import AgendamentoForm from './components/AgendamentoForm.vue'
 import VisualizacaoGrid from './components/VisualizacaoGrid.vue'
 import CalendarioMensal from './components/CalendarioMensal.vue'
+import RelatorioDisponibilidade from './components/RelatorioDisponibilidade.vue'
 import Login from './components/Login.vue'
 import SplashScreen from './components/SplashScreen.vue'
 
@@ -51,6 +52,10 @@ onMounted(() => {
 
         <div v-show="abaAtiva === 'calendario'" class="page-panel active">
           <CalendarioMensal />
+        </div>
+
+        <div v-show="abaAtiva === 'relatorio'" class="page-panel active">
+          <RelatorioDisponibilidade />
         </div>
       </div>
     </template>

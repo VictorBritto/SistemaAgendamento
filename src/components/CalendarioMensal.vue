@@ -121,19 +121,46 @@ const getClassParaDia = (mes, dia) => {
   return 'available'
 }
 
+const formatarNomeRecurso = (nome) => {
+  if (!nome) return ''
+  return nome.replace(/\s*-\s*HEX:#[0-9A-Fa-f]{6}$/i, '').trim()
+}
+
 const getTooltipParaDia = (mes, dia) => {
   const iso = getIsoDate(mes, dia)
-  if (feriadosIso.value.includes(iso)) return 'Feriado'
+  const dateObj = new Date(anoBase, mes, dia)
+  const diasDaSemana = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb']
+  const diaSemanaNome = diasDaSemana[dateObj.getDay()]
+  
+  let tooltip = `${diaSemanaNome}, ${dia.toString().padStart(2, '0')}/${(mes+1).toString().padStart(2, '0')}\n\n`
+
+  if (feriadosIso.value.includes(iso)) {
+    tooltip += 'Feriado\n'
+  }
   
   const reservasDoDia = reservas.value.filter(r => r.dataIso === iso || r.data === iso)
   if (reservasDoDia.length > 0) {
-    return `Ocupado:\n` + reservasDoDia.map(r => `- ${r.recurso}: ${r.horaInicio} às ${r.horaFim}`).join('\n')
+    tooltip += `Ocupações:\n` + reservasDoDia.map(r => `- ${formatarNomeRecurso(r.recurso)}: ${r.horaInicio} às ${r.horaFim}`).join('\n')
+  } else {
+    tooltip += 'Livre (Clique para ver as salas disponíveis)'
   }
-  return 'Livre'
+  return tooltip
 }
 
 const getCorRecurso = (recurso) => {
   if (!recurso) return { bg: '#6366f1', text: '#ffffff' }
+  
+  const hexMatch = recurso.match(/- HEX:(#[0-9A-Fa-f]{6})$/i)
+  if (hexMatch) {
+    const hex = hexMatch[1]
+    const r = parseInt(hex.slice(1, 3), 16)
+    const g = parseInt(hex.slice(3, 5), 16)
+    const b = parseInt(hex.slice(5, 7), 16)
+    const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255
+    const textColor = luminance > 0.5 ? '#000000' : '#ffffff'
+    return { bg: hex, text: textColor }
+  }
+
   const recUpper = recurso.toUpperCase()
   if (recUpper.includes('AZUL ESC')) return { bg: '#1E40AF', text: '#ffffff' }
   if (recUpper.includes('AZUL CLR') || recUpper.includes('AZUL CLARO')) return { bg: '#7DD3FC', text: '#000000' }
@@ -148,33 +175,61 @@ const abrirDetalhes = (mes, dia) => {
   const iso = getIsoDate(mes, dia)
   const reservasDoDia = reservas.value.filter(r => r.dataIso === iso || r.data === iso)
   
-  if (reservasDoDia.length === 0) return
-
   const dataBr = iso.split('-').reverse().join('/')
+  const dateObj = new Date(anoBase, mes, dia)
+  const diasDaSemana = ['Domingo', 'Segunda-feira', 'Terça-feira', 'Quarta-feira', 'Quinta-feira', 'Sexta-feira', 'Sábado']
+  const diaSemanaNome = diasDaSemana[dateObj.getDay()]
+
+  const categoriasSalas = ['metodologias', 'informatica', 'salas', 'videoconf']
+  const todasAsSalas = recursosExtras.value
+    .filter(r => categoriasSalas.includes(r.categoria) && !r.nome.toLowerCase().includes('microfone'))
+    .map(r => r.nome)
+  const salasOcupadas = reservasDoDia.map(r => r.recurso)
+  const salasDisponiveis = todasAsSalas.filter(sala => !salasOcupadas.includes(sala))
   
   let html = `<div style="text-align: left; max-height: 400px; overflow-y: auto;">`
-  reservasDoDia.forEach(r => {
-    const cor = getCorRecurso(r.recurso)
-    html += `
-      <div style="border-bottom: 1px solid var(--border-color, #e2e8f0); padding-bottom: 12px; margin-bottom: 12px;">
-        <div style="background-color: ${cor.bg}; color: ${cor.text}; padding: 6px 10px; border-radius: 4px; font-weight: bold; margin-bottom: 8px; display: inline-block; width: 100%; box-sizing: border-box;">
-          ${r.horaInicio} - ${r.horaFim}
+  
+  html += `<div style="margin-bottom: 16px; color: var(--text-muted); font-size: 14px;"><strong>Dia da semana:</strong> ${diaSemanaNome}</div>`
+
+  if (reservasDoDia.length > 0) {
+    html += `<h4 style="margin-bottom: 12px; color: var(--text-color);">Ocupações:</h4>`
+    reservasDoDia.forEach(r => {
+      const cor = getCorRecurso(r.recurso)
+      html += `
+        <div style="border-bottom: 1px solid var(--border-color, #e2e8f0); padding-bottom: 12px; margin-bottom: 12px;">
+          <div style="background-color: ${cor.bg}; color: ${cor.text}; padding: 6px 10px; border-radius: 4px; font-weight: bold; margin-bottom: 8px; display: inline-block; width: 100%; box-sizing: border-box;">
+            ${r.horaInicio} - ${r.horaFim}
+          </div>
+          <div style="font-size: 14px; margin-left: 4px;">
+            <b style="color: var(--text-color);">Sala:</b> <span style="color: var(--text-color);">${formatarNomeRecurso(r.recurso)}</span><br/>
+            <b style="color: var(--text-color);">Prof:</b> <span style="color: var(--text-color);">${r.professor}</span><br/>
+            <b style="color: var(--text-color);">Disciplina:</b> <span style="color: var(--text-color);">${r.disciplina}</span>
+          </div>
         </div>
-        <div style="font-size: 14px; margin-left: 4px;">
-          <b style="color: var(--text-color);">Sala:</b> <span style="color: var(--text-color);">${r.recurso}</span><br/>
-          <b style="color: var(--text-color);">Prof:</b> <span style="color: var(--text-color);">${r.professor}</span><br/>
-          <b style="color: var(--text-color);">Disciplina:</b> <span style="color: var(--text-color);">${r.disciplina}</span>
-        </div>
-      </div>
-    `
-  })
+      `
+    })
+  } else {
+    html += `<div style="margin-bottom: 16px; color: var(--text-color);">Nenhuma ocupação registrada para este dia.</div>`
+  }
+
+  if (salasDisponiveis.length > 0) {
+    html += `<h4 style="margin-top: 16px; margin-bottom: 12px; color: var(--text-color);">Salas Totalmente Livres:</h4>`
+    html += `<div style="display: flex; flex-wrap: wrap; gap: 8px;">`
+    salasDisponiveis.forEach(sala => {
+      const cor = getCorRecurso(sala)
+      html += `<span style="background-color: ${cor.bg}; color: ${cor.text}; padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: bold;">${formatarNomeRecurso(sala)}</span>`
+    })
+    html += `</div>`
+  }
+
   html += `</div>`
 
   Swal.fire({
-    title: `Ocupação em ${dataBr}`,
+    title: `Detalhes do dia ${dataBr}`,
     html: html,
     confirmButtonText: 'Fechar',
-    confirmButtonColor: '#6366f1'
+    confirmButtonColor: '#6366f1',
+    width: '500px'
   })
 }
 </script>
@@ -227,7 +282,7 @@ const abrirDetalhes = (mes, dia) => {
   justify-content: center;
   font-size: 13px;
   border-radius: 6px;
-  cursor: default;
+  cursor: pointer;
 }
 
 .day:not(.empty) {
@@ -253,7 +308,6 @@ const abrirDetalhes = (mes, dia) => {
   color: white;
   font-weight: bold;
   box-shadow: 0 2px 4px rgba(99, 102, 241, 0.3);
-  cursor: pointer;
 }
 .day.occupied:hover {
   background: #4f46e5;
