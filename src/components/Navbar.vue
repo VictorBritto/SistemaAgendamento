@@ -12,6 +12,7 @@
     </div>
 
     <button 
+      v-if="isAdmin"
       class="nav-btn" 
       :class="{ active: abaAtiva === 'cadastro' }" 
       @click="mudarAba('cadastro')"
@@ -31,6 +32,15 @@
     </button>
     <button 
       class="nav-btn" 
+      :class="{ active: abaAtiva === 'minhas_reservas' }" 
+      @click="mudarAba('minhas_reservas')"
+      title="Minhas Reservas"
+    >
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+      <span class="nav-label">Minhas Reservas</span>
+    </button>
+    <button 
+      class="nav-btn" 
       :class="{ active: abaAtiva === 'calendario' }" 
       @click="mudarAba('calendario')"
       title="Calendário de Ocupação"
@@ -39,6 +49,7 @@
       <span class="nav-label">Calendário</span>
     </button>
     <button 
+      v-if="isAdmin"
       class="nav-btn" 
       :class="{ active: abaAtiva === 'relatorio' }" 
       @click="mudarAba('relatorio')"
@@ -48,6 +59,7 @@
       <span class="nav-label">Relatórios</span>
     </button>
     <button 
+      v-if="isAdmin"
       class="nav-btn" 
       :class="{ active: abaAtiva === 'filaDelphi' }" 
       @click="mudarAba('filaDelphi')"

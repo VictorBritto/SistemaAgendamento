@@ -7,17 +7,18 @@ import VisualizacaoGrid from './components/VisualizacaoGrid.vue'
 import CalendarioMensal from './components/CalendarioMensal.vue'
 import RelatorioDisponibilidade from './components/RelatorioDisponibilidade.vue'
 import FilaDelphi from './components/FilaDelphi.vue'
+import MinhasReservas from './components/MinhasReservas.vue'
 import Login from './components/Login.vue'
 import SplashScreen from './components/SplashScreen.vue'
 
-const { user } = useAuth()
-const abaAtiva = ref('cadastro')
+const { user, isAdmin } = useAuth()
+const abaAtiva = ref(isAdmin.value ? 'cadastro' : 'visualizacao')
 const showSplash = ref(true)
 
 // Garantir que não caia em uma aba inválida ao logar
 watch(user, (newVal) => {
-  if (newVal && abaAtiva.value === 'login') {
-    abaAtiva.value = 'cadastro'
+  if (newVal) {
+    abaAtiva.value = isAdmin.value ? 'cadastro' : 'visualizacao'
   }
 })
 
@@ -39,6 +40,10 @@ watch(user, (newVal) => {
           <div class="main-panel-content">
             <div v-show="abaAtiva === 'cadastro'" class="page-panel active">
               <AgendamentoForm />
+            </div>
+
+            <div v-show="abaAtiva === 'minhas_reservas'" class="page-panel active">
+              <MinhasReservas />
             </div>
 
             <div v-show="abaAtiva === 'visualizacao'" class="page-panel active">

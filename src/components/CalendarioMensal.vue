@@ -45,9 +45,11 @@
 import { ref, onMounted, computed, watch } from 'vue'
 import { supabase } from '../supabase'
 import { useReservas } from '../composables/useReservas'
+import { useAuth } from '../composables/useAuth'
 import Swal from 'sweetalert2'
 
 const { carregarReservas } = useReservas()
+const { user, isAdmin } = useAuth()
 
 const carregando = ref(true)
 const recursosExtras = ref([])
@@ -140,7 +142,12 @@ const getTooltipParaDia = (mes, dia) => {
   
   const reservasDoDia = reservas.value.filter(r => r.dataIso === iso || r.data === iso)
   if (reservasDoDia.length > 0) {
-    tooltip += `Ocupações:\n` + reservasDoDia.map(r => `- ${formatarNomeRecurso(r.recurso)}: ${r.horaInicio} às ${r.horaFim}`).join('\n')
+    tooltip += `Ocupações:\n` + reservasDoDia.map(r => {
+      const isOwnerOrAdmin = isAdmin.value || r.user_id === user.value?.id
+      return isOwnerOrAdmin 
+        ? `- ${formatarNomeRecurso(r.recurso)}: ${r.horaInicio} às ${r.horaFim}`
+        : `- ${formatarNomeRecurso(r.recurso)}: Ocupado`
+    }).join('\n')
   } else {
     tooltip += 'Livre (Clique para ver as salas disponíveis)'
   }
@@ -194,19 +201,35 @@ const abrirDetalhes = (mes, dia) => {
   if (reservasDoDia.length > 0) {
     html += `<h4 style="margin-bottom: 12px; color: var(--text-color);">Ocupações:</h4>`
     reservasDoDia.forEach(r => {
+      const isOwnerOrAdmin = isAdmin.value || r.user_id === user.value?.id
       const cor = getCorRecurso(r.recurso)
-      html += `
-        <div style="border-bottom: 1px solid var(--border-color, #e2e8f0); padding-bottom: 12px; margin-bottom: 12px;">
-          <div style="background-color: ${cor.bg}; color: ${cor.text}; padding: 6px 10px; border-radius: 4px; font-weight: bold; margin-bottom: 8px; display: inline-block; width: 100%; box-sizing: border-box;">
-            ${r.horaInicio} - ${r.horaFim}
+      
+      if (isOwnerOrAdmin) {
+        html += `
+          <div style="border-bottom: 1px solid var(--border-color, #e2e8f0); padding-bottom: 12px; margin-bottom: 12px;">
+            <div style="background-color: ${cor.bg}; color: ${cor.text}; padding: 6px 10px; border-radius: 4px; font-weight: bold; margin-bottom: 8px; display: inline-block; width: 100%; box-sizing: border-box;">
+              ${r.horaInicio} - ${r.horaFim}
+            </div>
+            <div style="font-size: 14px; margin-left: 4px;">
+              <b style="color: var(--text-color);">Sala:</b> <span style="color: var(--text-color);">${formatarNomeRecurso(r.recurso)}</span><br/>
+              <b style="color: var(--text-color);">Prof:</b> <span style="color: var(--text-color);">${r.professor}</span><br/>
+              <b style="color: var(--text-color);">Disciplina:</b> <span style="color: var(--text-color);">${r.disciplina}</span>
+            </div>
           </div>
-          <div style="font-size: 14px; margin-left: 4px;">
-            <b style="color: var(--text-color);">Sala:</b> <span style="color: var(--text-color);">${formatarNomeRecurso(r.recurso)}</span><br/>
-            <b style="color: var(--text-color);">Prof:</b> <span style="color: var(--text-color);">${r.professor}</span><br/>
-            <b style="color: var(--text-color);">Disciplina:</b> <span style="color: var(--text-color);">${r.disciplina}</span>
+        `
+      } else {
+        html += `
+          <div style="border-bottom: 1px solid var(--border-color, #e2e8f0); padding-bottom: 12px; margin-bottom: 12px;">
+            <div style="background-color: ${cor.bg}; color: ${cor.text}; padding: 6px 10px; border-radius: 4px; font-weight: bold; margin-bottom: 8px; display: inline-block; width: 100%; box-sizing: border-box;">
+              Reservado
+            </div>
+            <div style="font-size: 14px; margin-left: 4px; color: var(--text-muted); font-style: italic;">
+              <b style="color: var(--text-color);">Sala:</b> <span style="color: var(--text-color);">${formatarNomeRecurso(r.recurso)}</span><br/>
+              Ocupado
+            </div>
           </div>
-        </div>
-      `
+        `
+      }
     })
   } else {
     html += `<div style="margin-bottom: 16px; color: var(--text-color);">Nenhuma ocupação registrada para este dia.</div>`

@@ -171,6 +171,7 @@
                     <div :style="getCorFundoFull(info.recurso)">
                       <div class="card-header" style="margin-bottom: 0;">
                          <span class="room-name" style="font-size: 14px; color: inherit;">{{ formatarNomeRecurso(info.recurso) }}</span>
+                         <span v-if="info.status === 'pendente'" class="badge-status" style="background-color: #f59e0b; color: #ffffff; border: none; padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: bold;">Aguardando Aprovação</span>
                       </div>
                     </div>
                     
@@ -178,7 +179,7 @@
                     <div style="padding: 16px; background-color: var(--card-bg); flex: 1; display: flex; flex-direction: column;">
                       <div class="time-badge">{{ info.horaInicio }} - {{ info.horaFim }}</div>
                     
-                    <div class="details">
+                    <div class="details" v-if="isAdmin || info.user_id === user?.id">
                        <strong>{{ info.disciplina }}</strong>
                        <div class="curso">
                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 4px;"><path d="M22 10v6M2 10l10-5 10 5-10 5z"></path><path d="M6 12v5c3 3 9 3 12 0v-5"></path></svg>
@@ -192,9 +193,13 @@
                          <strong>Obs:</strong> {{ info.observacao.replace(/\[DELPHI_SYNC\]/g, '').trim() }}
                        </div>
                     </div>
+                    <div class="details" v-else style="display: flex; justify-content: center; align-items: center; flex: 1; color: var(--text-muted); font-weight: 500; font-size: 14px; background: #f8fafc; border-radius: 6px; border: 1px dashed #cbd5e1; margin-bottom: 8px;">
+                       <span>Reservado (Ocupado)</span>
+                    </div>
 
                     <div class="actions">
-                       <div style="display: flex; gap: 8px; width: 100%; justify-content: flex-end;">
+                       <div style="display: flex; gap: 8px; width: 100%; justify-content: flex-end; align-items: center;">
+                         <button type="button" class="btn-cancel" style="background: #10b981; color: white; border-color: #10b981;" v-if="isAdmin && info.status === 'pendente'" @click="aprovar(info.id)">Aprovar</button>
                          <button type="button" class="btn-cancel" v-if="isAdmin || info.user_id === user?.id" @click="abrirEdicao(info)">Editar</button>
                          <button type="button" class="btn-cancel" v-if="isAdmin || info.user_id === user?.id" @click="remover(info.id)">Cancelar</button>
                        </div>
@@ -371,7 +376,7 @@ import ExcelJS from 'exceljs'
 import { saveAs } from 'file-saver'
 import html2pdf from 'html2pdf.js'
 
-const { reservas, carregarReservas, deletarReserva, deletarReservasLote, limparBanco, recursosExtras, carregarRecursosExtras, atualizarReserva } = useReservas()
+const { reservas, carregarReservas, deletarReserva, deletarReservasLote, limparBanco, recursosExtras, carregarRecursosExtras, atualizarReserva, atualizarStatus } = useReservas()
 const { user, isAdmin } = useAuth()
 
 const reservaEmEdicao = ref(null)
@@ -1198,6 +1203,15 @@ const gerarRelatorio = async () => {
   await carregarRecursosExtras()
   recalcularTabela()
   carregando.value = false
+}
+
+const aprovar = async (id) => {
+  try {
+    await atualizarStatus(id, 'aprovado')
+    Swal.fire('Aprovado!', 'A reserva foi confirmada com sucesso.', 'success')
+  } catch(e) {
+    Swal.fire('Erro', 'Não foi possível aprovar a reserva.', 'error')
+  }
 }
 
 const remover = async (id) => {
