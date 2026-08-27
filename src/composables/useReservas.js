@@ -112,6 +112,29 @@ export function useReservas() {
     }
   }
 
+  const atualizarSincronizacaoDelphi = async (id, isSynced) => {
+    try {
+      const index = reservas.value.findIndex(item => item.id === id)
+      if (index === -1) return
+      
+      let observacao = reservas.value[index].observacao || ''
+      const tag = '[DELPHI_SYNC]'
+      
+      if (isSynced && !observacao.includes(tag)) {
+        observacao = observacao ? `${observacao}\n${tag}` : tag
+      } else if (!isSynced && observacao.includes(tag)) {
+        observacao = observacao.replace(new RegExp(`\\n?${tag.replace(/\[/g, '\\[').replace(/\]/g, '\\]')}`, 'g'), '').trim()
+      }
+      
+      const { error } = await supabase.from('reservas').update({ observacao }).eq('id', id)
+      if (error) throw error
+      
+      reservas.value[index].observacao = observacao
+    } catch (error) {
+      console.error('Erro ao atualizar sincronização Delphi:', error)
+    }
+  }
+
   const deletarReserva = async (id) => {
     try {
       const { error } = await supabase.from('reservas').delete().eq('id', id)
@@ -161,6 +184,15 @@ export function useReservas() {
 
   const atualizarReserva = async (id, dadosAtualizados) => {
     try {
+      const index = reservas.value.findIndex(item => item.id === id)
+      const existingObs = index !== -1 ? reservas.value[index].observacao || '' : ''
+      const hasSyncTag = existingObs.includes('[DELPHI_SYNC]')
+      
+      let novaObs = dadosAtualizados.observacao || ''
+      if (hasSyncTag && !novaObs.includes('[DELPHI_SYNC]')) {
+        novaObs = novaObs ? `${novaObs}\n[DELPHI_SYNC]` : '[DELPHI_SYNC]'
+      }
+
       const { error } = await supabase.from('reservas').update({
         recurso: dadosAtualizados.recurso,
         dataIso: dadosAtualizados.dataIso,
@@ -169,7 +201,7 @@ export function useReservas() {
         curso: dadosAtualizados.curso,
         horaInicio: dadosAtualizados.horaInicio,
         horaFim: dadosAtualizados.horaFim,
-        observacao: dadosAtualizados.observacao || null
+        observacao: novaObs || null
       }).eq('id', id)
       if (error) throw error
       await carregarReservas()
@@ -200,6 +232,7 @@ export function useReservas() {
     carregarReservas,
     adicionarReservas,
     atualizarStatus,
+    atualizarSincronizacaoDelphi,
     deletarReserva,
     deletarReservasLote,
     atualizarReserva,

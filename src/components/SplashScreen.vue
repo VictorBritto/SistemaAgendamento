@@ -12,6 +12,12 @@ onMounted(() => {
 
 <template>
   <div class="splash-container">
+    <!-- Floating particles -->
+    <div class="splash-particle splash-particle-1"></div>
+    <div class="splash-particle splash-particle-2"></div>
+    <div class="splash-particle splash-particle-3"></div>
+    <div class="splash-particle splash-particle-4"></div>
+
     <div class="splash-content">
       <div class="logo-circle">
         <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -45,8 +51,10 @@ onMounted(() => {
   align-items: center;
   justify-content: center;
   background: var(--bg-gradient);
+  background-color: var(--bg-color);
   z-index: 9999;
   animation: fadeOut 0.5s ease-in-out 2.5s forwards;
+  overflow: hidden;
 }
 
 .splash-content {
@@ -54,6 +62,8 @@ onMounted(() => {
   flex-direction: column;
   align-items: center;
   animation: slideUp 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+  position: relative;
+  z-index: 1;
 }
 
 .logo-circle {
@@ -67,7 +77,19 @@ onMounted(() => {
   color: white;
   margin-bottom: 24px;
   box-shadow: var(--btn-shadow);
-  animation: pulse 2s infinite;
+  animation: logoGlow 2.5s ease-in-out infinite;
+  position: relative;
+}
+
+.logo-circle::after {
+  content: '';
+  position: absolute;
+  inset: -8px;
+  border-radius: 50%;
+  background: var(--btn-gradient);
+  opacity: 0.15;
+  filter: blur(16px);
+  animation: logoGlow 2.5s ease-in-out infinite reverse;
 }
 
 .splash-title {
@@ -75,7 +97,7 @@ onMounted(() => {
   font-weight: 800;
   color: var(--text-color);
   margin: 0 0 8px 0;
-  letter-spacing: -0.02em;
+  letter-spacing: -0.03em;
   text-align: center;
 }
 
@@ -99,9 +121,56 @@ onMounted(() => {
 .loading-bar {
   height: 100%;
   width: 0%;
-  background: var(--primary-color);
+  background: linear-gradient(90deg, var(--primary-color), #a855f7, var(--primary-color));
+  background-size: 200% 100%;
   border-radius: 4px;
-  animation: loading 2s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  animation: loading 2s cubic-bezier(0.4, 0, 0.2, 1) forwards, shimmer 1.5s ease-in-out infinite;
+}
+
+/* Floating particles */
+.splash-particle {
+  position: absolute;
+  border-radius: 50%;
+  pointer-events: none;
+  opacity: 0.3;
+}
+
+.splash-particle-1 {
+  width: 8px;
+  height: 8px;
+  background: var(--primary-color);
+  top: 20%;
+  left: 15%;
+  animation: particleFloat 4s ease-in-out infinite;
+}
+
+.splash-particle-2 {
+  width: 6px;
+  height: 6px;
+  background: #a855f7;
+  top: 70%;
+  right: 20%;
+  animation: particleFloat 5s ease-in-out infinite reverse;
+}
+
+.splash-particle-3 {
+  width: 10px;
+  height: 10px;
+  background: var(--primary-color);
+  bottom: 25%;
+  left: 25%;
+  animation: particleFloat 6s ease-in-out infinite;
+  animation-delay: -2s;
+}
+
+.splash-particle-4 {
+  width: 5px;
+  height: 5px;
+  background: #a855f7;
+  top: 35%;
+  right: 30%;
+  animation: particleFloat 4.5s ease-in-out infinite;
+  animation-delay: -1s;
 }
 
 @keyframes slideUp {
@@ -109,15 +178,30 @@ onMounted(() => {
   100% { opacity: 1; transform: translateY(0); }
 }
 
-@keyframes pulse {
-  0% { box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.4); }
-  70% { box-shadow: 0 0 0 20px rgba(99, 102, 241, 0); }
-  100% { box-shadow: 0 0 0 0 rgba(99, 102, 241, 0); }
+@keyframes logoGlow {
+  0%, 100% { 
+    box-shadow: var(--btn-shadow), 0 0 0 0 rgba(99, 102, 241, 0.25);
+  }
+  50% { 
+    box-shadow: var(--btn-shadow), 0 0 0 20px rgba(99, 102, 241, 0), 0 0 40px 8px rgba(99, 102, 241, 0.1);
+  }
 }
 
 @keyframes loading {
   0% { width: 0%; }
   100% { width: 100%; }
+}
+
+@keyframes shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+@keyframes particleFloat {
+  0%, 100% { transform: translate(0, 0) scale(1); opacity: 0.3; }
+  25% { transform: translate(20px, -30px) scale(1.2); opacity: 0.5; }
+  50% { transform: translate(-15px, -50px) scale(0.8); opacity: 0.2; }
+  75% { transform: translate(10px, -20px) scale(1.1); opacity: 0.4; }
 }
 
 @keyframes fadeOut {

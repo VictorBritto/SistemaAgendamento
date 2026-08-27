@@ -1,55 +1,81 @@
 <template>
   <div class="navbar">
+    <!-- Branding -->
+    <div class="navbar-brand">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+        <line x1="16" y1="2" x2="16" y2="6"></line>
+        <line x1="8" y1="2" x2="8" y2="6"></line>
+        <line x1="3" y1="10" x2="21" y2="10"></line>
+      </svg>
+      <span class="brand-text">SA</span>
+    </div>
+
     <button 
       class="nav-btn" 
       :class="{ active: abaAtiva === 'cadastro' }" 
       @click="mudarAba('cadastro')"
+      title="Novo Agendamento"
     >
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 6px; vertical-align: text-bottom;"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
-      Novo Agendamento
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
+      <span class="nav-label">Novo Agendamento</span>
     </button>
     <button 
       class="nav-btn" 
       :class="{ active: abaAtiva === 'visualizacao' }" 
       @click="mudarAba('visualizacao')"
+      title="Consultar Cronograma"
     >
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 6px; vertical-align: text-bottom;"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
-      Consultar Cronograma
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+      <span class="nav-label">Consultar Cronograma</span>
     </button>
     <button 
       class="nav-btn" 
       :class="{ active: abaAtiva === 'calendario' }" 
       @click="mudarAba('calendario')"
+      title="Calendário de Ocupação"
     >
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 6px; vertical-align: text-bottom;"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line><path d="M8 14h.01"></path><path d="M12 14h.01"></path><path d="M16 14h.01"></path><path d="M8 18h.01"></path><path d="M12 18h.01"></path><path d="M16 18h.01"></path></svg>
-      Calendário de Ocupação
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line><path d="M8 14h.01"></path><path d="M12 14h.01"></path><path d="M16 14h.01"></path><path d="M8 18h.01"></path><path d="M12 18h.01"></path><path d="M16 18h.01"></path></svg>
+      <span class="nav-label">Calendário</span>
     </button>
     <button 
       class="nav-btn" 
       :class="{ active: abaAtiva === 'relatorio' }" 
       @click="mudarAba('relatorio')"
+      title="Relatório de Disponibilidade"
     >
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 6px; vertical-align: text-bottom;"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>
-      Relatório de Disponibilidade
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>
+      <span class="nav-label">Relatórios</span>
+    </button>
+    <button 
+      class="nav-btn" 
+      :class="{ active: abaAtiva === 'filaDelphi' }" 
+      @click="mudarAba('filaDelphi')"
+      title="Fila de Sincronização Delphi"
+    >
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path><polyline points="9 11 12 14 22 4"></polyline></svg>
+      <span class="nav-label">Fila Delphi</span>
     </button>
     
     <div style="flex-grow: 1;"></div>
     
-    <button class="theme-toggle-btn" @click="toggleTheme" :title="isDark ? 'Mudar para Tema Claro' : 'Mudar para Tema Escuro'">
-      <svg v-if="!isDark" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
-      <svg v-else width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>
-    </button>
-
-    <!-- Divisor visual -->
-    <div style="width: 1px; background: var(--border-color); margin: 0 8px;"></div>
-
+    <div class="user-profile-section" v-if="user">
+      <div class="user-avatar">
+        {{ user.email ? user.email.charAt(0).toUpperCase() : 'U' }}
+      </div>
+      <div class="user-info">
+        <span class="user-email">{{ user.email }}</span>
+        <span class="user-role">{{ isAdmin ? 'Administrador' : 'Usuário Padrão' }}</span>
+      </div>
+    </div>
+    
     <button 
-      class="nav-btn" 
+      class="nav-btn logout-btn" 
       @click="deslogar"
-      style="color: #dc2626;"
+      title="Sair"
     >
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 6px; vertical-align: text-bottom;"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
-      Sair
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+      <span class="nav-label">Sair</span>
     </button>
   </div>
 </template>
@@ -63,7 +89,7 @@ defineProps({
 })
 
 const emit = defineEmits(['update:abaAtiva'])
-const { user, logout } = useAuth()
+const { user, logout, isAdmin } = useAuth()
 
 const mudarAba = (aba) => {
   emit('update:abaAtiva', aba)
@@ -74,21 +100,81 @@ const deslogar = async () => {
   mudarAba('visualizacao')
 }
 
-const isDark = ref(false)
 
-const toggleTheme = () => {
-  isDark.value = !isDark.value
-  if (isDark.value) {
-    document.body.setAttribute('data-theme', 'dark')
-    localStorage.setItem('app-theme', 'dark')
-  } else {
-    document.body.removeAttribute('data-theme')
-    localStorage.setItem('app-theme', 'light')
-  }
+</script>
+
+<style scoped>
+.user-profile-section {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+  margin: 0 12px 12px 12px;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  overflow: hidden;
+  transition: all 0.3s ease;
 }
 
-onMounted(() => {
-  // Sincroniza com o que o App.vue definiu
-  isDark.value = document.body.getAttribute('data-theme') === 'dark'
-})
-</script>
+.user-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--primary-color), var(--primary-hover));
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  font-size: 14px;
+  flex-shrink: 0;
+}
+
+.user-info {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.user-email {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--sidebar-text-hover);
+  text-overflow: ellipsis;
+  overflow: hidden;
+}
+
+.user-role {
+  font-size: 11px;
+  color: var(--sidebar-text);
+  margin-top: 2px;
+  background: rgba(255, 255, 255, 0.1);
+  padding: 2px 6px;
+  border-radius: 4px;
+  display: inline-block;
+  width: fit-content;
+}
+
+.logout-btn {
+  color: #ef4444;
+  margin: 0 12px 12px 12px;
+  width: calc(100% - 24px);
+}
+
+.logout-btn:hover {
+  background: rgba(239, 68, 68, 0.1);
+  color: #f87171;
+}
+
+@media (max-width: 768px) {
+  .user-profile-section {
+    padding: 12px;
+    justify-content: center;
+  }
+  .user-info {
+    display: none;
+  }
+}
+</style>

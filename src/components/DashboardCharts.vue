@@ -1,15 +1,9 @@
 <template>
   <div class="dashboard-grid">
-    <div class="card">
+    <div class="card" style="grid-column: 1 / -1;">
       <h3>Ocupação do Campus Selecionado</h3>
-      <div style="position: relative; height: 260px; width: 100%; display: flex; justify-content: center;">
+      <div style="position: relative; height: 300px; width: 100%; display: flex; justify-content: center;">
         <canvas ref="chartLabs"></canvas>
-      </div>
-    </div>
-    <div class="card">
-      <h3>Auditoria de Assiduidade e Uso Real</h3>
-      <div style="position: relative; height: 260px; width: 100%; display: flex; justify-content: center;">
-        <canvas ref="chartAssiduidade"></canvas>
       </div>
     </div>
   </div>
@@ -23,48 +17,56 @@ const props = defineProps({
   countCat: {
     type: Object,
     required: true
-  },
-  countStatus: {
-    type: Object,
-    required: true
   }
 })
 
 const chartLabs = ref(null)
-const chartAssiduidade = ref(null)
-
 let chartLabsInstance = null
-let chartAssiduidadeInstance = null
 
 const renderizarGraficos = () => {
   if (chartLabsInstance) chartLabsInstance.destroy()
-  if (chartAssiduidadeInstance) chartAssiduidadeInstance.destroy()
 
   if (chartLabs.value) {
+    const ctx = chartLabs.value.getContext('2d')
+    const gradient = ctx.createLinearGradient(0, 0, 0, 300)
+    gradient.addColorStop(0, '#7C3AED') // primary color
+    gradient.addColorStop(1, 'rgba(124, 58, 237, 0.2)')
+
     chartLabsInstance = new Chart(chartLabs.value, {
       type: 'bar',
       data: {
         labels: ['Metodologias', 'Informática', 'Salas Aula', 'Notebooks', 'VídeoConf'],
-        datasets: [{ label: 'Reservas', data: Object.values(props.countCat), backgroundColor: '#1e3a8a', borderRadius: 4 }]
+        datasets: [{ 
+          label: 'Reservas', 
+          data: Object.values(props.countCat), 
+          backgroundColor: gradient,
+          borderColor: '#7C3AED',
+          borderWidth: 1,
+          borderRadius: 6,
+          barPercentage: 0.6
+        }]
       },
-      options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
-    })
-  }
-
-  if (chartAssiduidade.value) {
-    chartAssiduidadeInstance = new Chart(chartAssiduidade.value, {
-      type: 'doughnut',
-      data: {
-        labels: ['Utilizado', 'Falta (No-Show)', 'Pendente'],
-        datasets: [{ data: [props.countStatus.usado, props.countStatus.noshow, props.countStatus.pendente], backgroundColor: ['#10b981', '#ef4444', '#f59e0b'] }]
-      },
-      options: { responsive: true, maintainAspectRatio: false }
+      options: { 
+        responsive: true, 
+        maintainAspectRatio: false, 
+        plugins: { legend: { display: false } },
+        scales: {
+          y: {
+            beginAtZero: true,
+            grid: { borderDash: [4, 4], color: 'rgba(0,0,0,0.05)' },
+            border: { display: false }
+          },
+          x: {
+            grid: { display: false },
+            border: { display: false }
+          }
+        }
+      }
     })
   }
 }
 
 watch(() => props.countCat, renderizarGraficos, { deep: true })
-watch(() => props.countStatus, renderizarGraficos, { deep: true })
 
 onMounted(() => {
   renderizarGraficos()

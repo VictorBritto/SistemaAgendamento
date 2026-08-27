@@ -132,7 +132,7 @@ watch(() => [props.reserva, props.lote], ([newRes, newLote]) => {
     form.curso = newRes.curso
     form.horaInicio = newRes.horaInicio
     form.horaFim = newRes.horaFim
-    form.observacao = newRes.observacao || ''
+    form.observacao = newRes.observacao ? newRes.observacao.replace(/\[DELPHI_SYNC\]/g, '').trim() : ''
     
     if (newLote && newLote.length > 1) {
       form.aplicarLote = true

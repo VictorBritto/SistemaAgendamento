@@ -19,8 +19,7 @@
     
     <form @submit.prevent="processarAgendamento" class="form-layout" :class="{ 'form-submitted': formSubmitted }">
       <!-- Coluna Principal -->
-      <div class="form-main">
-        
+      <!-- form-left removed -->
         <!-- Localização -->
         <div class="card section-card">
           <div class="section-header">
@@ -125,111 +124,7 @@
           </div>
         </div>
 
-        <!-- Data e Hora -->
-        <div class="card section-card">
-          <div class="section-header">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
-            <h3>Cronograma</h3>
-          </div>
-          <div class="input-grid">
-            
-            <!-- Secao de Presets -->
-            <div style="grid-column: 1 / -1; padding-bottom: 16px; border-bottom: 1px solid var(--border-color); margin-bottom: 8px;">
-              <label>Presets de Cronograma</label>
-              
-              <div>
-                <select v-model="presetSelecionado" @change="carregarPreset">
-                  <option value="">-- Carregar um preset de horário (Opcional) --</option>
-                  <option v-for="preset in presetsDisponiveis" :key="preset.id" :value="preset.nome">{{ preset.nome.split('||')[0] }}</option>
-                </select>
-                <div style="margin-top: 6px; display: flex; justify-content: flex-end; gap: 8px; flex-wrap: wrap;">
-                  <button v-if="presetSelecionado" type="button" @click="editarRecursoExtra('preset_horario', presetSelecionado)" class="btn-cadastrar-recurso" style="padding: 4px 10px; font-size: 11px; color: #f59e0b; border-color: #fcd34d;">
-                    Editar Preset
-                  </button>
-                  <button v-if="presetSelecionado" type="button" @click="apagarRecursoExtra('preset_horario', presetSelecionado)" class="btn-cadastrar-recurso" style="padding: 4px 10px; font-size: 11px; color: #ef4444; border-color: #fca5a5;">
-                    Apagar Preset
-                  </button>
-                  <button type="button" @click="abrirModalCadastro('preset')" class="btn-cadastrar-recurso" style="padding: 4px 10px; font-size: 11px;">
-                    + Novo Preset
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            <div style="grid-column: 1 / -1; display: flex; flex-direction: column; gap: 8px; margin-bottom: 8px; background: var(--input-bg); padding: 12px; border: 1px solid var(--border-color); border-radius: 6px;">
-              <div style="display: flex; justify-content: space-between; align-items: center;">
-                <label style="margin-bottom: 0; font-weight: 600; font-size: 12px; color: var(--text-color);">Semestre Letivo:</label>
-                <button v-if="isAdmin" type="button" @click="abrirModalConfig" class="btn-cadastrar-recurso" style="padding: 2px 8px; font-size: 11px; margin: 0;">
-                  ⚙️ Editar
-                </button>
-              </div>
-              <div style="display: flex; gap: 16px;">
-                <label style="display: flex; align-items: center; gap: 6px; cursor: pointer; font-weight: normal; font-size: 13px;">
-                  <input type="radio" value="1" v-model="semestreAtivo" @change="validarDatasSemestre"> 1º Semestre
-                </label>
-                <label style="display: flex; align-items: center; gap: 6px; cursor: pointer; font-weight: normal; font-size: 13px;">
-                  <input type="radio" value="2" v-model="semestreAtivo" @change="validarDatasSemestre"> 2º Semestre
-                </label>
-              </div>
-            </div>
-            <div style="grid-column: 1 / -1;">
-              <label for="tipoAgendamento">Modelo de Distribuição</label>
-              <select id="tipoAgendamento" v-model="form.tipoAgendamento" @change="alternarTipoAgendamento">
-                <option value="">-- Selecione o Modelo --</option>
-                <option value="pontual">Evento Pontual (Dia Único)</option>
-                <option value="periodo">Lote Semestral (Recorrente)</option>
-              </select>
-            </div>
-
-            <div class="periodos-scroll-container">
-              <div v-for="(periodo, index) in form.periodos" :key="index" style="border: 1px solid var(--border-color); padding: 12px; border-radius: 6px; background: var(--card-bg);">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-                  <span style="font-weight: bold; font-size: 13px; white-space: nowrap; color: var(--text-color);">Período {{ index + 1 }}</span>
-                  <button v-if="form.periodos.length > 1" type="button" @click="removerPeriodo(index)" style="background: transparent; border: none; padding: 4px; display: flex; align-items: center; justify-content: center; cursor: pointer; border-radius: 4px; flex-shrink: 0;" title="Remover" onmouseover="this.style.background='rgba(239, 68, 68, 0.1)'" onmouseout="this.style.background='transparent'">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
-                  </button>
-                </div>
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
-                  <div>
-                    <label :for="'dateInicio' + index" style="font-size: 10px; margin-bottom: 4px;">Data Inicio</label>
-                    <input type="date" :id="'dateInicio' + index" v-model="periodo.dataInicio" :min="minDate" :max="maxDate" @change="() => { replicarDataPontual(index); validarInputManual(index) }" required style="padding: 8px 10px; font-size: 12px;">
-                  </div>
-                  <div :style="{ opacity: form.tipoAgendamento === 'pontual' || !form.tipoAgendamento ? 0.5 : 1 }">
-                    <label :for="'dateFim' + index" style="font-size: 10px; margin-bottom: 4px;">Data Fim</label>
-                    <input type="date" :id="'dateFim' + index" v-model="periodo.dataFim" :min="minDate" :max="maxDate" :disabled="form.tipoAgendamento === 'pontual' || !form.tipoAgendamento" @change="() => validarInputManual(index)" required style="padding: 8px 10px; font-size: 12px;">
-                  </div>
-                </div>
-              </div>
-            </div>
-            
-            <button type="button" @click="adicionarPeriodo" style="margin-bottom: 16px; background: var(--input-bg); border: 1px dashed var(--border-color); color: var(--text-color); padding: 8px; width: 100%; cursor: pointer; border-radius: 6px;">+ Adicionar Data Inicial e Final</button>
-
-            <div v-show="form.tipoAgendamento === 'periodo'" style="grid-column: 1 / -1;">
-              <label>Dias da Semana (Recorrência)</label>
-              <div class="checkbox-group" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); gap: 12px; margin-top: 8px; background: var(--input-bg); padding: 16px; border: 1px solid var(--border-color); border-radius: 6px;">
-                <label class="checkbox-label"><input type="checkbox" value="1" v-model="form.diasSemana"> Segunda</label>
-                <label class="checkbox-label"><input type="checkbox" value="2" v-model="form.diasSemana"> Terça</label>
-                <label class="checkbox-label"><input type="checkbox" value="3" v-model="form.diasSemana"> Quarta</label>
-                <label class="checkbox-label"><input type="checkbox" value="4" v-model="form.diasSemana"> Quinta</label>
-                <label class="checkbox-label"><input type="checkbox" value="5" v-model="form.diasSemana"> Sexta</label>
-                <label class="checkbox-label"><input type="checkbox" value="6" v-model="form.diasSemana"> Sábado</label>
-                <label class="checkbox-label"><input type="checkbox" value="0" v-model="form.diasSemana"> Domingo</label>
-              </div>
-            </div>
-
-            <div style="grid-column: 1 / -1; display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 130px), 1fr)); gap: 16px;">
-              <div>
-                <label for="horaInicio">Hora Início</label>
-                <input type="time" id="horaInicio" v-model="form.horaInicio" required>
-              </div>
-              <div>
-                <label for="horaFim">Hora Término</label>
-                <input type="time" id="horaFim" v-model="form.horaFim" required>
-              </div>
-            </div>
-          </div>
-        </div>
-
+        
         <!-- Detalhes Acadêmicos -->
         <div class="card section-card">
           <div class="section-header">
@@ -324,12 +219,144 @@
           </div>
         </div>
 
-      </div>
+      <!-- </div> of form-left removed -->
 
-      <!-- Coluna Lateral (Sidebar) -->
-      <div class="form-sidebar">
-        <div class="card sticky-card">
-          <h3 style="margin-bottom: 0;">Resumo da Operação</h3>
+      <!-- form-right removed -->
+        <!-- Data e Hora -->
+        <div class="card section-card">
+          <div class="section-header">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+            <h3>Cronograma</h3>
+          </div>
+          <div class="input-grid">
+            
+            <!-- Secao de Presets -->
+            <div style="grid-column: 1 / -1; padding-bottom: 16px; border-bottom: 1px solid var(--border-color); margin-bottom: 8px;">
+              <label>Presets de Cronograma</label>
+              
+              <div>
+                <select v-model="presetSelecionado" @change="carregarPreset">
+                  <option value="">-- Carregar um preset de horário (Opcional) --</option>
+                  <option v-for="preset in presetsDisponiveis" :key="preset.id" :value="preset.nome">{{ preset.nome.split('||')[0] }}</option>
+                </select>
+                <div style="margin-top: 6px; display: flex; justify-content: flex-end; gap: 8px; flex-wrap: wrap;">
+                  <button v-if="presetSelecionado" type="button" @click="editarRecursoExtra('preset_horario', presetSelecionado)" class="btn-cadastrar-recurso" style="padding: 4px 10px; font-size: 11px; color: #f59e0b; border-color: #fcd34d;">
+                    Editar Preset
+                  </button>
+                  <button v-if="presetSelecionado" type="button" @click="apagarRecursoExtra('preset_horario', presetSelecionado)" class="btn-cadastrar-recurso" style="padding: 4px 10px; font-size: 11px; color: #ef4444; border-color: #fca5a5;">
+                    Apagar Preset
+                  </button>
+                  <button type="button" @click="abrirModalCadastro('preset')" class="btn-cadastrar-recurso" style="padding: 4px 10px; font-size: 11px;">
+                    + Novo Preset
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div style="grid-column: 1 / -1; display: flex; flex-direction: column; gap: 8px; margin-bottom: 8px; background: var(--input-bg); padding: 12px; border: 1px solid var(--border-color); border-radius: 6px;">
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <label style="margin-bottom: 0; font-weight: 600; font-size: 12px; color: var(--text-color);">Semestre Letivo:</label>
+                <button v-if="isAdmin" type="button" @click="abrirModalConfig" class="btn-cadastrar-recurso" style="padding: 2px 8px; font-size: 11px; margin: 0;">
+                  ⚙️ Editar
+                </button>
+              </div>
+              <div style="display: flex; gap: 16px; flex-wrap: wrap;">
+                <label style="display: flex; align-items: center; gap: 6px; cursor: pointer; font-weight: normal; font-size: 13px; white-space: nowrap;">
+                  <input type="radio" value="1" v-model="semestreAtivo" @change="validarDatasSemestre"> 1º Semestre
+                </label>
+                <label style="display: flex; align-items: center; gap: 6px; cursor: pointer; font-weight: normal; font-size: 13px; white-space: nowrap;">
+                  <input type="radio" value="2" v-model="semestreAtivo" @change="validarDatasSemestre"> 2º Semestre
+                </label>
+              </div>
+            </div>
+            <div style="grid-column: 1 / -1;">
+              <label for="tipoAgendamento">Modelo de Distribuição</label>
+              <select id="tipoAgendamento" v-model="form.tipoAgendamento" @change="alternarTipoAgendamento">
+                <option value="">-- Selecione o Modelo --</option>
+                <option value="pontual">Evento Pontual (Dia Único)</option>
+                <option value="periodo">Lote Semestral (Recorrente)</option>
+              </select>
+            </div>
+
+            <div class="periodos-scroll-container">
+              <div v-for="(periodo, index) in form.periodos" :key="index" style="border: 1px solid var(--border-color); padding: 12px; border-radius: 6px; background: var(--card-bg);">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                  <span style="font-weight: bold; font-size: 13px; white-space: nowrap; color: var(--text-color);">Período {{ index + 1 }}</span>
+                  <button v-if="form.periodos.length > 1" type="button" @click="removerPeriodo(index)" style="background: transparent; border: none; padding: 4px; display: flex; align-items: center; justify-content: center; cursor: pointer; border-radius: 4px; flex-shrink: 0;" title="Remover" onmouseover="this.style.background='rgba(239, 68, 68, 0.1)'" onmouseout="this.style.background='transparent'">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                  </button>
+                </div>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 12px;">
+                  <div>
+                    <label :for="'dateInicio' + index" style="font-size: 10px; margin-bottom: 4px;">Data Inicio</label>
+                    <VueDatePicker 
+                      :id="'dateInicio' + index" 
+                      v-model="periodo.dataInicio" 
+                      model-type="yyyy-MM-dd"
+                      format="dd/MM/yyyy"
+                      :enable-time-picker="false"
+                      auto-apply
+                      :min-date="minDate" 
+                      :max-date="maxDate" 
+                      @update:model-value="() => { replicarDataPontual(index); validarInputManual(index) }" 
+                      :required="true" 
+                    ></VueDatePicker>
+                  </div>
+                  <div :style="{ opacity: form.tipoAgendamento === 'pontual' || !form.tipoAgendamento ? 0.5 : 1 }">
+                    <label :for="'dateFim' + index" style="font-size: 10px; margin-bottom: 4px;">Data Fim</label>
+                    <VueDatePicker 
+                      :id="'dateFim' + index" 
+                      v-model="periodo.dataFim" 
+                      model-type="yyyy-MM-dd"
+                      format="dd/MM/yyyy"
+                      :enable-time-picker="false"
+                      auto-apply
+                      :min-date="minDate" 
+                      :max-date="maxDate" 
+                      :disabled="form.tipoAgendamento === 'pontual' || !form.tipoAgendamento" 
+                      @update:model-value="() => validarInputManual(index)" 
+                      :required="true" 
+                    ></VueDatePicker>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <button type="button" @click="adicionarPeriodo" style="margin-bottom: 16px; background: var(--input-bg); border: 1px dashed var(--border-color); color: var(--text-color); padding: 8px; width: 100%; cursor: pointer; border-radius: 6px;">+ Adicionar Data Inicial e Final</button>
+
+            <div v-show="form.tipoAgendamento === 'periodo'" style="grid-column: 1 / -1;">
+              <label>Dias da Semana (Recorrência)</label>
+              <div class="checkbox-group" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); gap: 12px; margin-top: 8px; background: var(--input-bg); padding: 16px; border: 1px solid var(--border-color); border-radius: 6px;">
+                <label class="checkbox-label"><input type="checkbox" value="1" v-model="form.diasSemana"> Segunda</label>
+                <label class="checkbox-label"><input type="checkbox" value="2" v-model="form.diasSemana"> Terça</label>
+                <label class="checkbox-label"><input type="checkbox" value="3" v-model="form.diasSemana"> Quarta</label>
+                <label class="checkbox-label"><input type="checkbox" value="4" v-model="form.diasSemana"> Quinta</label>
+                <label class="checkbox-label"><input type="checkbox" value="5" v-model="form.diasSemana"> Sexta</label>
+                <label class="checkbox-label"><input type="checkbox" value="6" v-model="form.diasSemana"> Sábado</label>
+                <label class="checkbox-label"><input type="checkbox" value="0" v-model="form.diasSemana"> Domingo</label>
+              </div>
+            </div>
+
+            <div style="grid-column: 1 / -1; display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 16px;">
+              <div>
+                <label for="horaInicio">Hora Início</label>
+                <input type="time" id="horaInicio" v-model="form.horaInicio" required>
+              </div>
+              <div>
+                <label for="horaFim">Hora Término</label>
+                <input type="time" id="horaFim" v-model="form.horaFim" required>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card section-card sticky-card" style="display: flex; flex-direction: column;">
+          <div class="section-header">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+            <h3>Resumo da Operação</h3>
+          </div>
+          
+          <div class="sticky-card-content" style="display: flex; flex-direction: column; flex: 1;">
           
           <div class="alert-info" style="text-align: left; margin-top: 16px; padding: 12px; font-size: 13px;">
             <strong style="display:block; margin-bottom: 4px; font-size: 12px; text-transform: uppercase;">Período Letivo Base ({{ semestreAtivo }}º Sem)</strong>
@@ -373,29 +400,28 @@
             <h4 style="margin-top: 0; margin-bottom: 12px; font-size: 13px; color: var(--text-color);">Agendamentos Aguardando ({{ carrinho.length }})</h4>
             <div style="display: flex; flex-direction: column; gap: 8px; max-height: 250px; overflow-y: auto;">
               <div v-for="(item, idx) in carrinho" :key="idx" style="background: var(--input-bg); border: 1px solid var(--border-color); border-radius: 6px; padding: 10px; font-size: 12px; display: flex; justify-content: space-between; align-items: center;">
-                <div style="display: flex; flex-direction: column; gap: 4px;">
-                  <strong style="color: var(--primary-color);">{{ item.recursos.join(', ') }}</strong>
-                  <span style="color: var(--text-muted);">{{ item.horaInicio }} as {{ item.horaFim }}</span>
+                <div>
+                  <strong style="display:block; color: var(--text-color);">{{ item.tipoAgendamento === 'pontual' ? item.dataUnica : (item.diasSemana.length + ' dia(s) / sem') }}</strong>
+                  <span style="color: var(--text-muted); font-size: 11px;">{{ item.horaInicio }} as {{ item.horaFim }}</span>
                 </div>
                 <div style="display: flex; gap: 4px;">
-                  <button type="button" @click="editarDoCarrinho(idx)" style="background: none; border: none; color: #f59e0b; cursor: pointer; padding: 4px;" title="Editar">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+                  <button type="button" @click="editarItemCarrinho(idx)" style="background: transparent; border: none; padding: 4px; cursor: pointer; border-radius: 4px;" title="Editar" onmouseover="this.style.background='rgba(59, 130, 246, 0.1)'" onmouseout="this.style.background='transparent'">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
                   </button>
-                  <button type="button" @click="removerDoCarrinho(idx)" style="background: none; border: none; color: #ef4444; cursor: pointer; padding: 4px;" title="Remover">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                  <button type="button" @click="removerDoCarrinho(idx)" style="background: transparent; border: none; padding: 4px; cursor: pointer; border-radius: 4px;" title="Remover" onmouseover="this.style.background='rgba(239, 68, 68, 0.1)'" onmouseout="this.style.background='transparent'">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
                   </button>
                 </div>
               </div>
             </div>
           </div>
-
-          <div style="margin-top: 24px;">
-            <button type="submit" class="btn-submit" style="width: 100%;" :disabled="isSubmitting" @click="formSubmitted = true">
-              {{ isSubmitting ? 'Processando...' : 'Processar ' + (itemsParaProcessarCount > 1 ? itemsParaProcessarCount + ' Reservas' : 'Reserva') }}
-            </button>
+          
+          <button type="submit" class="btn-primary" :disabled="isSubmitting" style="margin-top: 24px; padding: 14px; font-size: 15px; border-radius: 8px; background-color: var(--primary-color); color: white; border: none; font-weight: 600; cursor: pointer;">
+            <svg v-if="isSubmitting" class="spinner" viewBox="0 0 50 50"><circle class="path" cx="25" cy="25" r="20" fill="none" stroke-width="5"></circle></svg>
+            <span v-else>Processar {{ carrinho.length > 0 ? (form.campus ? 'Reserva + Carrinho' : 'Carrinho ('+carrinho.length+')') : 'Reserva' }}</span>
+          </button>
           </div>
         </div>
-      </div>
       <!-- Modal de Cadastro -->
       <div class="modal-overlay" v-if="modalCadastro.aberto">
         <div class="modal-content">
@@ -506,21 +532,21 @@
             <div style="grid-column: 1 / -1; font-weight: bold; margin-bottom: -8px;">1º Semestre</div>
             <div class="input-group">
               <label>Data de Início</label>
-              <input type="date" v-model="formConfigSemestre.sem1Inicio" required>
+              <VueDatePicker v-model="formConfigSemestre.sem1Inicio" model-type="yyyy-MM-dd" format="dd/MM/yyyy" :enable-time-picker="false" auto-apply :required="true"></VueDatePicker>
             </div>
             <div class="input-group">
               <label>Data de Fim</label>
-              <input type="date" v-model="formConfigSemestre.sem1Fim" required>
+              <VueDatePicker v-model="formConfigSemestre.sem1Fim" model-type="yyyy-MM-dd" format="dd/MM/yyyy" :enable-time-picker="false" auto-apply :required="true"></VueDatePicker>
             </div>
 
             <div style="grid-column: 1 / -1; font-weight: bold; margin-bottom: -8px; margin-top: 8px;">2º Semestre</div>
             <div class="input-group">
               <label>Data de Início</label>
-              <input type="date" v-model="formConfigSemestre.sem2Inicio" required>
+              <VueDatePicker v-model="formConfigSemestre.sem2Inicio" model-type="yyyy-MM-dd" format="dd/MM/yyyy" :enable-time-picker="false" auto-apply :required="true"></VueDatePicker>
             </div>
             <div class="input-group">
               <label>Data de Fim</label>
-              <input type="date" v-model="formConfigSemestre.sem2Fim" required>
+              <VueDatePicker v-model="formConfigSemestre.sem2Fim" model-type="yyyy-MM-dd" format="dd/MM/yyyy" :enable-time-picker="false" auto-apply :required="true"></VueDatePicker>
             </div>
           </div>
 
@@ -551,6 +577,7 @@
         </div>
       </div>
 
+      <!-- </div> of form-right removed -->
     </form>
   </div>
 </template>
@@ -562,6 +589,7 @@ import { useReservas } from '../composables/useReservas'
 import Swal from 'sweetalert2'
 import TermoLapelaModal from './TermoLapelaModal.vue'
 import emailjs from '@emailjs/browser'
+import { VueDatePicker } from '@vuepic/vue-datepicker'
 
 // Modal de importação
 const modalImportacaoTextoAberta = ref(false)
@@ -1712,24 +1740,23 @@ const processarAgendamento = async () => {
 
 .form-layout {
   display: grid;
-  grid-template-columns: 1fr 340px;
-  gap: 32px;
-  align-items: start;
-}
-
-/* Colocar os cards de seção lado a lado na mesma altura */
-.form-main {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr));
+  grid-template-columns: repeat(4, 1fr);
   gap: 24px;
   align-items: stretch;
 }
 
-@media (max-width: 1200px) {
+@media (max-width: 1500px) {
+  .form-layout {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 850px) {
   .form-layout {
     grid-template-columns: 1fr;
   }
 }
+
 
 .form-submitted input:invalid,
 .form-submitted select:invalid,
@@ -1739,37 +1766,51 @@ const processarAgendamento = async () => {
 }
 
 .section-card {
-  padding: 32px;
+  padding: 0;
   margin-bottom: 0;
+  overflow: hidden;
+}
+
+.section-card > *:not(.section-header) {
+  padding-left: 32px;
+  padding-right: 32px;
+}
+
+.section-card > *:last-child {
+  padding-bottom: 32px;
 }
 
 .section-header {
   display: flex;
   align-items: center;
   gap: 12px;
-  margin-bottom: 24px;
-  padding-bottom: 16px;
-  border-bottom: 1px solid var(--border-color);
+  margin-bottom: 32px;
+  padding: 20px 32px;
+  background-color: var(--primary-color);
+  border-bottom: none;
 }
 .section-header h3 {
   margin: 0;
-  font-size: 18px;
-  color: var(--text-color);
+  font-size: 16px;
+  font-weight: 600;
+  color: white;
 }
 .section-header svg {
-  color: var(--primary-color);
+  color: white;
 }
 
 .input-grid {
   display: grid;
   grid-template-columns: 1fr;
   gap: 20px;
+  max-width: 450px;
+  margin: 0 auto;
 }
 
 .sticky-card {
   position: sticky;
   top: 90px;
-  padding: 24px;
+  align-self: flex-start;
 }
 
 .summary-details {

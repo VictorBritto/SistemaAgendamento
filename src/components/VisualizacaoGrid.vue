@@ -5,27 +5,32 @@
         <h2>Cronograma de Ocupação</h2>
         <p class="text-muted">Visualize a distribuição dos recursos e gerencie os agendamentos realizados.</p>
       </div>
-      <div class="action-bar" style="margin-top: 0;">
-        <button class="btn-excel" @click="exportarExcel" style="background-color: #059669;">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 6px; vertical-align: text-bottom;"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="8" y1="13" x2="16" y2="13"></line><line x1="8" y1="17" x2="16" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+      <div class="action-bar" style="margin-top: 0; display: flex; gap: 8px;">
+        <!-- Botões Primários -->
+        <button class="btn-excel" @click="exportarExcel" style="background-color: #10b981; border: none; padding: 8px 16px; border-radius: 8px; font-weight: 500; display: flex; align-items: center; box-shadow: 0 2px 4px rgba(16, 185, 129, 0.2);">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 6px;"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="8" y1="13" x2="16" y2="13"></line><line x1="8" y1="17" x2="16" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
           Exportar XLSX
         </button>
-        <button class="btn-pdf" @click="exportarPDF">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 6px; vertical-align: text-bottom;"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
+        <button class="btn-pdf" style="background-color: var(--primary-color); border: none; padding: 8px 16px; border-radius: 8px; color: white; font-weight: 500; display: flex; align-items: center; box-shadow: var(--btn-shadow);" @click="exportarRelatorioLotePDF">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 6px;"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+          Gerar PDF
+        </button>
+        <button class="btn-pdf" @click="exportarPDF" style="background-color: var(--card-bg); border: 1px solid var(--border-color); color: var(--text-color); padding: 8px 16px; border-radius: 8px; font-weight: 500; display: flex; align-items: center;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 6px;"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
           Imprimir
         </button>
-        <button class="btn-pdf" style="background-color: #6366f1;" @click="exportarRelatorioLotePDF">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 6px; vertical-align: text-bottom;"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
-          Gerar PDF por Lote
-        </button>
-        <button v-if="isAdmin" class="btn-danger" @click="abrirExclusaoLote" style="background-color: #c2410c;">Apagar por Lote</button>
-        <button v-if="isAdmin" class="btn-danger" @click="confirmarLimpeza">Apagar Tudo</button>
+
+        <!-- Botões de Perigo (Apenas Admin) -->
+        <div v-if="isAdmin" style="display: flex; gap: 8px; margin-left: 8px; padding-left: 16px; border-left: 1px solid var(--border-color);">
+          <button class="btn-danger" @click="abrirExclusaoLote" style="background-color: transparent; border: 1px solid #ef4444; color: #fff; padding: 8px 16px; border-radius: 8px; font-weight: 500;">Apagar por Lote</button>
+          <button class="btn-danger" @click="confirmarLimpeza" style="background-color: #ef4444; border: none; padding: 8px 16px; border-radius: 8px; font-weight: 500; color: white;">Apagar Tudo</button>
+        </div>
       </div>
     </div>
 
-    <div class="card section-card compact-filters">
-      <h3 style="margin-bottom: 12px; font-size: 15px; display: flex; align-items: center; gap: 8px;">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon></svg>
+    <div class="card section-card compact-filters" style="background: var(--input-bg); border: none; box-shadow: none;">
+      <h3 style="margin-bottom: 16px; font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted); display: flex; align-items: center; gap: 8px;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon></svg>
         Filtros de Pesquisa
       </h3>
       <div class="input-grid">
@@ -102,7 +107,7 @@
     </div>
 
     <div v-else id="blocoDadosVisuais">
-      <DashboardCharts :countCat="countCat" :countStatus="countStatus" />
+      <DashboardCharts :countCat="countCat" />
 
       <div class="card">
         <h3 style="margin-bottom: 16px;">Distribuição de Ocupação (Apenas Reservados)</h3>
@@ -166,7 +171,6 @@
                     <div :style="getCorFundoFull(info.recurso)">
                       <div class="card-header" style="margin-bottom: 0;">
                          <span class="room-name" style="font-size: 14px; color: inherit;">{{ formatarNomeRecurso(info.recurso) }}</span>
-                         <span class="badge-status" :style="{ backgroundColor: statusBgColor(info.status), color: '#ffffff', border: 'none', padding: '4px 10px' }">{{ statusTexto(info.status) }}</span>
                       </div>
                     </div>
                     
@@ -184,23 +188,17 @@
                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 4px;"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
                          {{ info.professor }}
                        </div>
-                       <div v-if="info.observacao" style="font-size: 12px; color: var(--text-muted); font-style: italic; background-color: #f1f5f9; padding: 6px; border-radius: 4px; border-left: 2px solid var(--primary-color);">
-                         <strong>Obs:</strong> {{ info.observacao }}
+                       <div v-if="info.observacao && info.observacao.replace(/\[DELPHI_SYNC\]/g, '').trim()" style="font-size: 12px; color: var(--text-muted); font-style: italic; background-color: #f1f5f9; padding: 6px; border-radius: 4px; border-left: 2px solid var(--primary-color);">
+                         <strong>Obs:</strong> {{ info.observacao.replace(/\[DELPHI_SYNC\]/g, '').trim() }}
                        </div>
                     </div>
 
                     <div class="actions">
-                       <select v-if="isAdmin" :value="info.status" @change="mudarStatus(info.id, $event.target.value)">
-                          <option value="pendente">Reservado</option>
-                          <option value="usado">Utilizado</option>
-                          <option value="noshow">Não Usou</option>
-                       </select>
-                       
                        <div style="display: flex; gap: 8px; width: 100%; justify-content: flex-end;">
                          <button type="button" class="btn-cancel" v-if="isAdmin || info.user_id === user?.id" @click="abrirEdicao(info)">Editar</button>
                          <button type="button" class="btn-cancel" v-if="isAdmin || info.user_id === user?.id" @click="remover(info.id)">Cancelar</button>
                        </div>
-                     </div>
+                    </div>
                     </div>
                   </div>
                </template>
@@ -373,7 +371,7 @@ import ExcelJS from 'exceljs'
 import { saveAs } from 'file-saver'
 import html2pdf from 'html2pdf.js'
 
-const { reservas, carregarReservas, atualizarStatus, deletarReserva, deletarReservasLote, limparBanco, recursosExtras, carregarRecursosExtras, atualizarReserva } = useReservas()
+const { reservas, carregarReservas, deletarReserva, deletarReservasLote, limparBanco, recursosExtras, carregarRecursosExtras, atualizarReserva } = useReservas()
 const { user, isAdmin } = useAuth()
 
 const reservaEmEdicao = ref(null)
@@ -827,7 +825,7 @@ const linhasTabela = ref([])
 const diaSelecionado = ref(null)
 
 const countCat = reactive({ metodologias: 0, informatica: 0, salas: 0, notebooks: 0, videoconf: 0 })
-const countStatus = reactive({ usado: 0, noshow: 0, pendente: 0 })
+
 
 const mesAbreviado = (mesNum) => {
   const meses = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
@@ -1080,15 +1078,7 @@ const totalEventos = (linha) => {
   return count;
 }
 
-const statusTexto = (status) => {
-  return status === 'usado' ? 'Utilizado' : status === 'noshow' ? 'Não Usou' : 'Reservado'
-}
 
-const statusBgColor = (status) => {
-  if (status === 'usado') return '#10b981'
-  if (status === 'noshow') return '#ef4444'
-  return '#f59e0b'
-}
 
 const obterListaRecursosDisponiveis = (campus, categoria) => {
   const blocosConfig = {
@@ -1131,7 +1121,6 @@ const recalcularTabela = () => {
   let dataFimFiltro = filtros.modoData === 'individual' ? filtros.dataInicio : filtros.dataFim
 
   Object.keys(countCat).forEach(k => countCat[k] = 0)
-  Object.keys(countStatus).forEach(k => countStatus[k] = 0)
   
   const mapa = {}
   let totalEncontrados = 0
@@ -1140,7 +1129,9 @@ const recalcularTabela = () => {
     // Contagem de Estatísticas
     if (filtros.campus === 'todos' || item.campus === filtros.campus) {
       countCat[item.categoria]++
-      if (filtros.categoria === 'todos' || item.categoria === filtros.categoria) countStatus[item.status]++
+      if (filtros.categoria === 'todos' || item.categoria === filtros.categoria) {
+        
+      }
     }
     
     // Filtro principal da Grid
@@ -1207,11 +1198,6 @@ const gerarRelatorio = async () => {
   await carregarRecursosExtras()
   recalcularTabela()
   carregando.value = false
-}
-
-const mudarStatus = async (id, status) => {
-  await atualizarStatus(id, status)
-  recalcularTabela() // UI Otimista
 }
 
 const remover = async (id) => {
@@ -1343,7 +1329,7 @@ const exportarExcel = async () => {
     { header: 'Professor', key: 'professor', width: 30 },
     { header: 'Curso', key: 'curso', width: 25 },
     { header: 'Observação', key: 'observacao', width: 45 },
-    { header: 'Status', key: 'status', width: 18 }
+
   ]
   
   // Estilizar Cabeçalho
@@ -1353,7 +1339,7 @@ const exportarExcel = async () => {
 
   reservas.value.forEach(d => {
     const dataBr = d.data.split('-').reverse().join('/')
-    const statusLabel = statusTexto(d.status)
+
     
     const row = sheet.addRow({
       campus: d.campus,
@@ -1365,15 +1351,15 @@ const exportarExcel = async () => {
       disciplina: d.disciplina,
       professor: d.professor,
       curso: d.curso,
-      observacao: d.observacao || '-',
-      status: statusLabel
+      observacao: d.observacao ? d.observacao.replace(/\[DELPHI_SYNC\]/g, '').trim() || '-' : '-',
+      observacao: d.observacao ? d.observacao.replace(/\[DELPHI_SYNC\]/g, '').trim() || '-' : '-'
     })
     
     row.alignment = { vertical: 'middle', horizontal: 'left' }
     row.getCell('data').alignment = { horizontal: 'center' }
     row.getCell('horaInicio').alignment = { horizontal: 'center' }
     row.getCell('horaFim').alignment = { horizontal: 'center' }
-    row.getCell('status').alignment = { horizontal: 'center' }
+
 
     // Colorir célula do Recurso conforme a sala
     const recursoCell = row.getCell('recurso')
@@ -1393,10 +1379,6 @@ const exportarExcel = async () => {
       recursoCell.font = { color: { argb: corTexto }, bold: true }
     }
 
-    const statusCell = row.getCell('status')
-    if(d.status === 'usado') statusCell.font = { color: { argb: 'FF15803D' }, bold: true }
-    if(d.status === 'noshow') statusCell.font = { color: { argb: 'FFB91C1C' }, bold: true }
-    if(d.status === 'pendente') statusCell.font = { color: { argb: 'FFB45309' }, bold: true }
   })
   
   const buffer = await workbook.xlsx.writeBuffer()
