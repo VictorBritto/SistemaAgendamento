@@ -13,8 +13,6 @@
       <div class="termo-document" id="termo-print-area">
         <!-- Cabeçalho -->
         <div class="termo-header">
-          <h1 class="fho-logo">FHO</h1>
-          <h2 class="fho-sub">FUNDAÇÃO HERMÍNIO OMETTO</h2>
           <h3 class="termo-title">TERMO DE EMPRÉSTIMO E RESPONSABILIDADE DE EQUIPAMENTO</h3>
           <p class="termo-desc">Pelo presente instrumento, o Departamento de Suporte à Informática realiza a cessão temporária do equipamento especificado para uso exclusivo em atividades institucionais autorizadas.</p>
         </div>

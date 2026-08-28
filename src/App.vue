@@ -68,14 +68,7 @@ watch(user, (newVal) => {
 
     <!-- Tela de Login Independente -->
     <template v-else>
-      <div class="login-page">
-
-        <div class="login-wrapper">
-          <h1 class="login-page-title">Sistema de Agendamento</h1>
-          <p class="login-page-subtitle">Faça login para gerenciar os recursos.</p>
-          <Login />
-        </div>
-      </div>
+      <Login @logged-in="() => {}" />
     </template>
     </div>
   </div>
