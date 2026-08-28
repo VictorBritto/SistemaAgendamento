@@ -17,7 +17,7 @@ onMounted(async () => {
 })
 
 const reservasFiltradas = computed(() => {
-  let resultado = reservas.value
+  let resultado = reservas.value.filter(r => r.status === 'aprovado')
 
   // Filtrar apenas pendentes de sincronização
   if (mostrarApenasPendentes.value) {

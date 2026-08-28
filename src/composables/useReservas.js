@@ -74,12 +74,12 @@ export function useReservas() {
 
   const adicionarReservas = async (novasReservas) => {
     try {
-      const { user } = useAuth()
+      const { user, isAdmin } = useAuth()
       
       // Remove o id local temporário e renomeia data para dataIso para o banco
       const reservasParaInserir = novasReservas.map(r => {
         const { id, data, ...resto } = r
-        const nova = { ...resto, dataIso: data }
+        const nova = { ...resto, dataIso: data, status: isAdmin.value ? 'aprovado' : 'pendente' }
         if (user.value) {
           nova.user_id = user.value.id
         }
