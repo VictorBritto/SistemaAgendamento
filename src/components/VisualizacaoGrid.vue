@@ -48,8 +48,8 @@
             <select id="filtroCategoria" v-model="filtros.categoria" @change="gerarRelatorio">
               <option value="">-- Selecione --</option>
               <option value="todos">Todos</option>
-              <option value="metodologias">Lab. Metodologia</option>
               <option value="informatica">Lab. Informática</option>
+              <option value="metodologias">Lab. Metodologia</option>
               <option value="salas">Salas de Aula</option>
               <option value="videoconf">Videoconf.</option>
             </select>
@@ -66,11 +66,11 @@
         
         <div :style="{ opacity: filtros.modoData === 'todos' ? 0.5 : 1, pointerEvents: filtros.modoData === 'todos' ? 'none' : 'auto' }">
           <label for="filtroDataInicio">Data Inicial / Única</label>
-          <input type="date" id="filtroDataInicio" v-model="filtros.dataInicio" :min="configuracaoGlobal.minDate" :max="configuracaoGlobal.maxDate" @change="gerarRelatorio">
+          <input type="text" class="flatpickr-input" id="filtroDataInicio" ref="filtroDataInicioRef" placeholder="dd/mm/aaaa">
         </div>
         <div :style="{ opacity: (filtros.modoData === 'individual' || filtros.modoData === 'todos') ? 0.5 : 1, pointerEvents: (filtros.modoData === 'individual' || filtros.modoData === 'todos') ? 'none' : 'auto' }">
           <label for="filtroDataFim">Data Final</label>
-          <input type="date" id="filtroDataFim" v-model="filtros.dataFim" :min="configuracaoGlobal.minDate" :max="configuracaoGlobal.maxDate" @change="gerarRelatorio">
+          <input type="text" class="flatpickr-input" id="filtroDataFim" ref="filtroDataFimRef" placeholder="dd/mm/aaaa">
         </div>
         <div>
           <label for="filtroDiaSemana">Dia da Semana</label>
@@ -365,7 +365,10 @@
 </template>
 
 <script setup>
-import { reactive, ref, computed, watch, onMounted, nextTick } from 'vue'
+import { reactive, ref, computed, watch, onMounted, nextTick, onBeforeUnmount } from 'vue'
+import flatpickr from 'flatpickr'
+import { Portuguese } from 'flatpickr/dist/l10n/pt.js'
+import 'flatpickr/dist/flatpickr.min.css'
 import Swal from 'sweetalert2'
 import DashboardCharts from './DashboardCharts.vue'
 import { useReservas } from '../composables/useReservas'
@@ -821,6 +824,66 @@ onMounted(async () => {
       filtros.dataFim = configuracaoGlobal.maxDate
     } catch(e) {}
   }
+  nextTick(() => initFlatpickrs())
+})
+
+const filtroDataInicioRef = ref(null)
+const filtroDataFimRef = ref(null)
+let fpInicio = null
+let fpFim = null
+
+const initFlatpickrs = () => {
+  if (fpInicio) fpInicio.destroy()
+  if (fpFim) fpFim.destroy()
+  
+  if (filtroDataInicioRef.value) {
+    fpInicio = flatpickr(filtroDataInicioRef.value, {
+      dateFormat: 'd/m/Y',
+      defaultDate: filtros.dataInicio ? new Date(filtros.dataInicio + 'T00:00:00') : null,
+      minDate: configuracaoGlobal.minDate ? new Date(configuracaoGlobal.minDate + 'T00:00:00') : undefined,
+      maxDate: configuracaoGlobal.maxDate ? new Date(configuracaoGlobal.maxDate + 'T00:00:00') : undefined,
+      disableMobile: true,
+      locale: Portuguese,
+      onChange: (selectedDates) => {
+        if (selectedDates.length > 0) {
+          const d = selectedDates[0]
+          filtros.dataInicio = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+          gerarRelatorio()
+        } else {
+          filtros.dataInicio = ''
+        }
+      }
+    })
+  }
+
+  if (filtroDataFimRef.value) {
+    fpFim = flatpickr(filtroDataFimRef.value, {
+      dateFormat: 'd/m/Y',
+      defaultDate: filtros.dataFim ? new Date(filtros.dataFim + 'T00:00:00') : null,
+      minDate: configuracaoGlobal.minDate ? new Date(configuracaoGlobal.minDate + 'T00:00:00') : undefined,
+      maxDate: configuracaoGlobal.maxDate ? new Date(configuracaoGlobal.maxDate + 'T00:00:00') : undefined,
+      disableMobile: true,
+      locale: Portuguese,
+      onChange: (selectedDates) => {
+        if (selectedDates.length > 0) {
+          const d = selectedDates[0]
+          filtros.dataFim = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+          gerarRelatorio()
+        } else {
+          filtros.dataFim = ''
+        }
+      }
+    })
+  }
+}
+
+watch(() => [configuracaoGlobal.minDate, configuracaoGlobal.maxDate], () => {
+  nextTick(() => initFlatpickrs())
+})
+
+onBeforeUnmount(() => {
+  if (fpInicio) fpInicio.destroy()
+  if (fpFim) fpFim.destroy()
 })
 
 const temDados = ref(false)
