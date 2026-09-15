@@ -1242,11 +1242,18 @@ const recalcularTabela = () => {
         mapa[dataIso][rec].sort((a, b) => a.horaInicio.localeCompare(b.horaInicio))
       })
 
+      const recursosOrdenados = {}
+      Object.keys(mapa[dataIso])
+        .sort((a, b) => a.localeCompare(b, 'pt-BR', { numeric: true, sensitivity: 'base' }))
+        .forEach(rec => {
+          recursosOrdenados[rec] = mapa[dataIso][rec]
+        })
+
       linhasTabela.value.push({
         dataIso,
         dataBr,
         diaSemana: diasSemanaTexto[diaSemanaNum],
-        recursos: mapa[dataIso]
+        recursos: recursosOrdenados
       })
   }
 
