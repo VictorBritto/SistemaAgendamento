@@ -1370,7 +1370,7 @@ const initFlatpickrs = () => {
               const yyyy = d.getFullYear()
               const mm = String(d.getMonth() + 1).padStart(2, '0')
               const dd = String(d.getDate()).padStart(2, '0')
-              periodo.dataInicio = `${yyyy}-${mm}-${dd}`
+              if (form.periodos[index]) form.periodos[index].dataInicio = `${yyyy}-${mm}-${dd}`
               replicarDataPontual(index)
               validarInputManual(index)
             }
@@ -1392,7 +1392,7 @@ const initFlatpickrs = () => {
               const yyyy = d.getFullYear()
               const mm = String(d.getMonth() + 1).padStart(2, '0')
               const dd = String(d.getDate()).padStart(2, '0')
-              periodo.dataFim = `${yyyy}-${mm}-${dd}`
+              if (form.periodos[index]) form.periodos[index].dataFim = `${yyyy}-${mm}-${dd}`
               validarInputManual(index)
             }
           }
@@ -1404,6 +1404,12 @@ const initFlatpickrs = () => {
 
 watch(() => form.periodos.length, () => {
   nextTick(() => initFlatpickrs())
+})
+
+watch(() => form.periodos, (newVal, oldVal) => {
+  if (newVal !== oldVal) {
+    nextTick(() => initFlatpickrs())
+  }
 })
 
 watch([minDate, maxDate], () => {
