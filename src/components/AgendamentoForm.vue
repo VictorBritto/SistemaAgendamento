@@ -17,7 +17,7 @@
       </button>
     </div>
     
-    <form @submit.prevent="processarAgendamento" class="form-layout" :class="{ 'form-submitted': formSubmitted }">
+    <form @submit.prevent="processarAgendamento" novalidate class="form-layout" :class="{ 'form-submitted': formSubmitted }">
       <!-- Coluna Principal -->
       <!-- form-left removed -->
         <!-- Localização -->
@@ -410,8 +410,8 @@
             </div>
           </div>
           
-          <button type="submit" class="btn-primary" :disabled="isSubmitting" style="margin-top: 24px; padding: 14px; font-size: 15px; border-radius: 8px; background-color: var(--primary-color); color: white; border: none; font-weight: 600; cursor: pointer;">
-            <svg v-if="isSubmitting" class="spinner" viewBox="0 0 50 50"><circle class="path" cx="25" cy="25" r="20" fill="none" stroke-width="5"></circle></svg>
+          <button type="submit" class="btn-primary" :disabled="isSubmitting" style="margin-top: 24px; padding: 14px; font-size: 15px; border-radius: 8px; background-color: var(--primary-color); color: white; border: none; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; min-height: 48px;">
+            <svg v-if="isSubmitting" class="spinner-svg" viewBox="0 0 50 50"><circle class="path" cx="25" cy="25" r="20" fill="none" stroke-width="5"></circle></svg>
             <span v-else>Processar {{ carrinho.length > 0 ? (form.campus ? 'Reserva + Carrinho' : 'Carrinho ('+carrinho.length+')') : 'Reserva' }}</span>
           </button>
           </div>
@@ -1547,7 +1547,9 @@ const verificarConflitoHorario = (h1Inicio, h1Fim, h2Inicio, h2Fim) => {
 const processarAgendamento = async () => {
   if (isSubmitting.value) return
   isSubmitting.value = true
-  formSubmitted.value = true
+  
+  try {
+    formSubmitted.value = true
   
   if (modalCadastro.value.aberto) {
     Swal.fire('Atenção', "Por favor, conclua o cadastro ou feche o modal antes de processar a reserva.", 'warning')
@@ -1555,11 +1557,13 @@ const processarAgendamento = async () => {
     return
   }
 
-  const formsParaProcessar = [...carrinho.value].map(item => JSON.parse(JSON.stringify(item)))
-  
-  if (indexEdicao.value !== null) {
+    const formsParaProcessar = [...carrinho.value].map(item => JSON.parse(JSON.stringify(item)))
+    
+    const formPreenchidoParcialmente = form.campus || form.categoria || (form.recursos && form.recursos.length > 0) || form.disciplina || form.professor || form.curso || form.horaInicio || form.horaFim;
+
+    if (indexEdicao.value !== null) {
     formsParaProcessar[indexEdicao.value] = JSON.parse(JSON.stringify(form))
-  } else if (form.campus && form.recursos.length > 0) {
+  } else if (formPreenchidoParcialmente) {
     // Compara campos-chave em vez de JSON completo para evitar falsos positivos com reatividade
     const formKey = (item) => `${item.campus}|${item.categoria}|${(item.recursos||[]).join(',')}|${(item.periodos||[]).map(p=>p.dataInicio+'_'+p.dataFim).join(',')}|${(item.diasSemana||[]).join(',')}|${item.horaInicio}|${item.horaFim}|${item.disciplina}|${item.professor}|${item.curso}|${item.tipoAgendamento}`
     const isInCart = carrinho.value.some(item => formKey(item) === formKey(form))
@@ -1574,10 +1578,10 @@ const processarAgendamento = async () => {
     return
   }
 
-  for (let idx = 0; idx < formsParaProcessar.length; idx++) {
-    const f = formsParaProcessar[idx]
-    if (!f.campus || !f.categoria || f.recursos.length === 0 || !f.tipoAgendamento || f.periodos.some(p => !p.dataInicio || !p.dataFim) || !f.horaInicio || !f.horaFim || !f.disciplina || !f.professor || !f.curso) {
-      Swal.fire('Atenção', `Agendamento ${idx + 1}: Preencha todos os campos obrigatórios.`, 'warning')
+    for (let idx = 0; idx < formsParaProcessar.length; idx++) {
+      const f = formsParaProcessar[idx]
+      if (!f.campus || !f.categoria || !f.recursos || f.recursos.length === 0 || !f.tipoAgendamento || !f.periodos || f.periodos.some(p => !p.dataInicio || !p.dataFim) || !f.horaInicio || !f.horaFim || !f.disciplina || !f.professor || !f.curso) {
+        Swal.fire('Atenção', `Agendamento ${idx + 1}: Preencha todos os campos obrigatórios (incluindo Horários e a seleção de ao menos um Recurso Específico).`, 'warning')
       isSubmitting.value = false
       return
     }
@@ -1661,10 +1665,8 @@ const processarAgendamento = async () => {
     }
   }
 
-  try {
     if (novasReservas.length === 0 && conflitos.length === 0) {
       Swal.fire('Atenção', 'Nenhuma data válida encontrada.', 'info')
-      isSubmitting.value = false
       return
     }
 
@@ -1758,12 +1760,11 @@ const processarAgendamento = async () => {
           message: msgCorpo
         }
 
-        // Substitua COLOQUE_O_TEMPLATE_ID_AQUI pelo Template ID real do site
         await emailjs.send(
-          'service_88zvr97',
-          'template_89sqjl2',
+          import.meta.env.VITE_EMAILJS_SERVICE_ID,
+          import.meta.env.VITE_EMAILJS_TEMPLATE_ID,
           templateParams,
-          '0U2_PC73g93wtLvjG'
+          import.meta.env.VITE_EMAILJS_PUBLIC_KEY
         )
 
         Swal.fire({
@@ -2113,5 +2114,24 @@ const processarAgendamento = async () => {
 .flatpickr-input:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+.spinner-svg {
+  animation: rotate 2s linear infinite;
+  width: 24px;
+  height: 24px;
+}
+.spinner-svg .path {
+  stroke: white;
+  stroke-linecap: round;
+  animation: dash 1.5s ease-in-out infinite;
+}
+@keyframes rotate {
+  100% { transform: rotate(360deg); }
+}
+@keyframes dash {
+  0% { stroke-dasharray: 1, 150; stroke-dashoffset: 0; }
+  50% { stroke-dasharray: 90, 150; stroke-dashoffset: -35; }
+  100% { stroke-dasharray: 90, 150; stroke-dashoffset: -124; }
 }
 </style>
